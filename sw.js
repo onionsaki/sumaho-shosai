@@ -1,7 +1,7 @@
 // Service worker: cache-first app shell so the app opens without a signal (spec §7).
 // Bump VERSION and keep APP_FILES complete whenever a loaded file is added or changed.
 
-const VERSION = '1';
+const VERSION = '2';
 const CACHE = `sumaho-shosai-v${VERSION}`;
 const APP_FILES = [
   './',
@@ -13,6 +13,8 @@ const APP_FILES = [
   'src/app.js',
   'src/db.js',
   'src/lookup.js',
+  'src/camera.js',
+  'src/feedback.js',
   'src/ui/dom.js',
   'src/ui/scan.js',
   'src/ui/shelf.js',
@@ -35,6 +37,9 @@ const APP_FILES = [
   'src/core/stats.js',
   'src/core/csv.js',
   'src/core/backup.js',
+  'vendor/barcode-detector/ponyfill.js',
+  'vendor/barcode-detector/zxing-exported.js',
+  'vendor/barcode-detector/zxing_reader.wasm',
 ];
 
 self.addEventListener('install', event => {
@@ -52,6 +57,7 @@ self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
   if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  if (self.location.hostname === 'localhost') return; // always fresh files while developing
   event.respondWith((async () => {
     const cached = await caches.match(request, { ignoreSearch: true });
     if (cached) return cached;
