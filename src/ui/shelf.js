@@ -2,6 +2,7 @@
 
 import { h, fill, downloadText } from './dom.js';
 import { openTagPicker as pickTags } from './tags.js';
+import { icon } from './icons.js';
 import { filterBooks, sortBooks } from '../core/search.js';
 import { isStale } from '../core/stale.js';
 import { groupWorks } from '../core/series.js';
@@ -49,7 +50,7 @@ export function mount(container, ctx) {
   const toolbar = h('div', { class: 'toolbar' });
   const list = h('ul', { class: 'book-list' });
   const more = h('div', { class: 'more' });
-  const fab = h('button', { class: 'fab', 'aria-label': '本を追加', onClick: () => ctx.openAdd() }, '＋');
+  const fab = h('button', { class: 'fab', 'aria-label': '本を追加', onClick: () => ctx.openAdd() }, icon('plus'));
 
   let timer = null;
   search.addEventListener('input', () => {
@@ -138,6 +139,12 @@ export function mount(container, ctx) {
 
   let currentRows = [];
   function renderList() {
+    if (!currentRows.length) {
+      fill(list, h('li', { class: 'empty' }, icon('books'), h('p', {}, books.length ? 'この条件の本はありません' : '本棚は空です'),
+        books.length ? null : h('p', { class: 'small' }, '「読み取る」でバーコードを読むか、右下の＋から登録できます')));
+      more.textContent = '';
+      return;
+    }
     fill(list, ...currentRows.slice(0, shown).map(r => r.el()));
     more.textContent = currentRows.length > shown ? 'さらに読み込み中…' : '';
   }
@@ -182,7 +189,7 @@ export function mount(container, ctx) {
     reloadTimer = setTimeout(load, 500);
   });
 
-  container.append(h('div', { class: 'search-row' }, search), banners, filters, toolbar, list, more, fab);
+  container.append(h('div', { class: 'search-row with-icon' }, icon('search'), search), banners, filters, toolbar, list, more, fab);
   load();
 
   return () => {

@@ -1,5 +1,7 @@
 // Tiny DOM helpers shared by every screen.
 
+import { icon } from './icons.js';
+
 export function h(tag, props = {}, ...children) {
   const el = document.createElement(tag);
   for (const [key, value] of Object.entries(props ?? {})) {
@@ -40,8 +42,9 @@ export function sheet(content, { title = '' } = {}) {
   const backdrop = h('div', { class: 'sheet-backdrop' });
   const panel = h('section', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
     h('header', { class: 'sheet-head' },
+      h('button', { class: 'round-btn', 'aria-label': '閉じる', onClick: () => close() }, icon('close')),
       h('h2', {}, title),
-      h('button', { class: 'icon-btn', 'aria-label': '閉じる', onClick: () => close() }, '×')),
+      h('span')),
     h('div', { class: 'sheet-body' }, content));
   const listeners = new Set();
   function close() {

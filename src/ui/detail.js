@@ -6,6 +6,7 @@ import { LABELS, newBook, todayStr } from '../core/model.js';
 import { toIsbn13 } from '../core/isbn.js';
 import { workKeyOf } from '../core/volume.js';
 import { normalizeForSearch } from '../core/normalize.js';
+import { icon } from './icons.js';
 
 const OWNERSHIP_OPTIONS = Object.entries(LABELS.ownership);
 const READ_OPTIONS = [['unread', 'まだ'], ['reading', '読書中'], ['read', '読んだ']];
@@ -41,7 +42,6 @@ export async function openDetail(bookId, ctx) {
       [book.publisher, book.issued && book.issued.replace('-', '年') + (book.issued.includes('-') ? '月' : '年')].filter(Boolean).join('・'),
       [book.pages ? `${book.pages}ページ` : '', book.price ? `${book.price.toLocaleString()}円` : ''].filter(Boolean).join('・'),
       book.isbn ? `ISBN ${book.isbn}` : 'ISBNなし',
-      `登録した日 ${formatDate(todayStr(new Date(book.createdAt)))}`,
     ].filter(Boolean);
     const status = book.lookup === 'pending' ? '本の情報を取得中です' : book.lookup === 'not_found' ? '本の情報が見つかりませんでした。「情報を直す」で入力できます' : '';
     fill(head, h('div', { class: 'detail-head' },
@@ -62,7 +62,7 @@ export async function openDetail(bookId, ctx) {
         class: 'chip on', 'aria-label': `${t.name}を外す`,
         onClick: async () => { await save({ tagIds: book.tagIds.filter(x => x !== t.id) }); renderTags(); },
       }, `${t.name} ×`)),
-      h('button', { class: 'chip', onClick: openTagSheet }, '＋ タグ'));
+      h('button', { class: 'chip ghost', onClick: openTagSheet }, book.tagIds.length ? '＋' : 'タグ未選択'));
   }
 
   function openTagSheet() {
@@ -92,23 +92,28 @@ export async function openDetail(bookId, ctx) {
     sheet(h('div', {}, input, listEl), { title: 'タグ' });
   }
 
-  const memo = h('textarea', { placeholder: 'なぜ買ったか、活かせるところ、感想など', value: book.memo });
+  const memo = h('textarea', { placeholder: 'メモ（なぜ買ったか、活かせるところ、感想など）', value: book.memo });
   let memoTimer = null;
   const saveMemo = () => { clearTimeout(memoTimer); if (memo.value !== book.memo) save({ memo: memo.value }); };
   memo.addEventListener('input', () => { clearTimeout(memoTimer); memoTimer = setTimeout(saveMemo, 500); });
   memo.addEventListener('blur', saveMemo);
   s.onClose(saveMemo);
 
+  // Yomoo-style line: reading state on the left, the day it was registered on the right (鬼さん 2026-10-24: 読んだ日→登録した日).
+  const stateLine = h('div', { class: 'state-line' });
   const dates = h('div');
   function renderDates() {
-    const dateField = (label, key) => {
-      const input = h('input', { type: 'date', value: book[key] });
-      input.addEventListener('change', () => save({ [key]: input.value }));
-      return h('label', { class: 'field' }, h('span', {}, label), input);
-    };
-    fill(dates, h('div', { class: 'field-row' },
-      book.readStatus === 'read' || book.readAt ? dateField('読んだ日', 'readAt') : h('div'),
-      book.ownership === 'released' || book.releasedAt ? dateField('手放した日', 'releasedAt') : h('div')));
+    const registered = h('input', { type: 'date', 'aria-label': '登録した日', value: todayStr(new Date(book.createdAt)) });
+    registered.addEventListener('change', () => {
+      if (registered.value) save({ createdAt: new Date(`${registered.value}T12:00:00`).toISOString() });
+    });
+    fill(stateLine,
+      h('div', { class: 'item' }, icon('open'), LABELS.read[book.readStatus]),
+      h('label', { class: 'item' }, icon('calendar'), h('span', { class: 'muted', style: { fontWeight: '400', fontSize: '11px', lineHeight: '1.2' } }, '登録した日'), registered));
+    const released = h('input', { type: 'date', value: book.releasedAt });
+    released.addEventListener('change', () => save({ releasedAt: released.value }));
+    fill(dates, book.ownership === 'released' || book.releasedAt
+      ? h('label', { class: 'field' }, h('span', {}, '手放した日'), released) : null);
   }
 
   function openEdit() {
@@ -181,8 +186,12 @@ export async function openDetail(bookId, ctx) {
     renderHead();
     renderTags();
     renderDates();
-    fill(content, 
+    fill(content,
       head,
+      h('div', { class: 'tag-line' }, icon('tag'), tagRow),
+      h('div', { style: { height: '18px' } }),
+      memo,
+      stateLine,
       h('div', { class: 'section-title' }, '持っているか'),
       segmented(OWNERSHIP_OPTIONS, book.ownership, async v => {
         await save({ ownership: v, releasedAt: v === 'released' && !book.releasedAt ? todayStr() : book.releasedAt });
@@ -194,11 +203,7 @@ export async function openDetail(bookId, ctx) {
         renderDates();
       }),
       dates,
-      h('div', { class: 'section-title' }, 'タグ'),
-      tagRow,
-      h('div', { class: 'section-title' }, 'メモ'),
-      memo,
-      h('div', { class: 'row-buttons', style: { marginTop: '8px' } },
+      h('div', { class: 'row-buttons', style: { marginTop: '22px' } },
         h('button', { class: 'btn', onClick: openEdit }, '情報を直す'),
         h('button', { class: 'btn', disabled: !book.isbn, onClick: () => { lookup.refetch(book.id); toast('本の情報を取り直しています'); } }, '本の情報を取り直す')),
       book.lookup === 'manual' ? h('button', { class: 'btn wide', style: { marginTop: '8px' }, onClick: addNextVolume }, 'この作品の次の巻を追加') : null,

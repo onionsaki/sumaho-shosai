@@ -10,6 +10,7 @@ import { checkResult } from '../core/check.js';
 import { workKeyOf } from '../core/volume.js';
 import { newBook, todayStr, LABELS } from '../core/model.js';
 import { openTagPicker, tagSummary } from './tags.js';
+import { icon } from './icons.js';
 
 const MODES = [['register', '登録（片付け）'], ['check', '確認（本屋）']];
 const OWNERSHIP_OPTIONS = [['owned', '持っている'], ['released', '手放した'], ['not_owned', '持っていない']];
@@ -76,7 +77,7 @@ export function mount(container, ctx) {
       handle(isbn).catch(err => toast(`エラー：${err?.message ?? err}`));
     };
     input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
-    return h('div', { class: 'search-row', style: { marginTop: '8px' } }, input, h('button', { class: 'btn', onClick: go }, label));
+    return h('div', { class: 'search-row', style: { marginTop: '14px' } }, input, h('button', { class: 'btn', onClick: go }, label));
   }
 
   // ---------- register mode ----------
@@ -98,18 +99,22 @@ export function mount(container, ctx) {
     }, 'タグを付ける'));
     renderTags();
 
-    fill(body, 
-      h('button', { class: 'btn primary wide', onClick: async () => {
+    fill(body,
+      h('button', { class: 'tile', onClick: async () => {
         await db.setSetting('lastSession', session);
         runRegister(session, tags);
-      } }, '始める（カメラが開きます）'),
-      h('p', { class: 'muted small' }, 'この回に読み取る本へ、まとめて付ける内容を下で選べます。前回の選び方を覚えています。'),
-      h('div', { class: 'section-title' }, '持っているか'),
-      segmented(OWNERSHIP_OPTIONS, session.ownership, v => { session.ownership = v; }),
-      h('div', { class: 'section-title' }, '読んだか（新しく登録する本だけ）'),
-      segmented(READ_OPTIONS, session.readStatus, v => { session.readStatus = v; }),
-      h('div', { class: 'section-title' }, 'タグ'),
-      tagWrap,
+      } }, h('div', {}, 'バーコードで登録'), icon('barcode'), h('div', { class: 'sub' }, '押すとカメラが開きます')),
+      h('button', { class: 'tile small', onClick: () => ctx.openAdd() },
+        h('div', {}, '書名・番号で登録'), icon('plus')),
+      h('div', { class: 'section-title' }, 'この回に読み取る本へ、まとめて付ける内容'),
+      h('div', { class: 'card' },
+        h('div', { class: 'small muted', style: { marginBottom: '6px' } }, '持っているか'),
+        segmented(OWNERSHIP_OPTIONS, session.ownership, v => { session.ownership = v; }),
+        h('div', { class: 'small muted', style: { margin: '14px 0 6px' } }, '読んだか（新しく登録する本だけ）'),
+        segmented(READ_OPTIONS, session.readStatus, v => { session.readStatus = v; }),
+        h('div', { class: 'small muted', style: { margin: '14px 0 6px' } }, 'タグ'),
+        tagWrap,
+        h('p', { class: 'muted small', style: { marginBottom: 0 } }, '前回の選び方を覚えています。')),
     );
   }
 
@@ -119,7 +124,7 @@ export function mount(container, ctx) {
     const count = h('div', { class: 'scan-count' });
     const log = h('ul', { class: 'scan-log' });
     const undoBtn = h('button', { class: 'btn', disabled: true }, '取り消し');
-    const statusEl = h('div', { class: 'muted small' });
+    const statusEl = h('div', { class: 'status-line' });
     const tagNames = session.tagIds.map(id => tags.find(t => t.id === id)?.name).filter(Boolean);
 
     const stateOf = e => {
@@ -197,13 +202,16 @@ export function mount(container, ctx) {
   function renderCheck() {
     const video = h('video');
     const card = h('div');
-    const statusEl = h('div', { class: 'muted small' });
+    const statusEl = h('div', { class: 'status-line' });
     let running = false;
-    const startBtn = h('button', { class: 'btn primary wide', onClick: async () => {
+    const cameraSlot = h('div');
+    const startTile = h('button', { class: 'tile', onClick: async () => {
       if (running) return;
+      fill(cameraSlot, h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })));
       running = await start(video, handle, statusEl);
-      if (running) startBtn.remove();
-    } }, '確認を始める');
+      if (!running) fill(cameraSlot, startTile);
+    } }, h('div', {}, '本屋で確認'), icon('barcode'), h('div', { class: 'sub' }, '持っているかを確かめます。何も保存しません'));
+    fill(cameraSlot, startTile);
 
     const workLines = (book, work) => {
       if (!work) return [];
@@ -276,11 +284,9 @@ export function mount(container, ctx) {
       extra.append(addBtn(info));
     }
 
-    fill(body, 
-      h('p', { class: 'muted small' }, '本屋で、持っているかを確かめます。何も保存しません。'),
-      h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })),
+    fill(body,
+      cameraSlot,
       statusEl,
-      h('div', { style: { marginTop: '10px' } }, startBtn),
       manualEntry('確認', handle),
       card,
     );

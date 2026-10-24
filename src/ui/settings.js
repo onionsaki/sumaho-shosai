@@ -22,6 +22,7 @@ const filePicker = (accept, onFile) => {
 export function mount(container, ctx) {
   const { db, lookup } = ctx;
   let disposed = false;
+  let openTagsOnRender = false; // keep タグの整理 open after editing a tag
 
   async function render() {
     const [books, tags, examTagId, staleYears, lastBackupAt] = await Promise.all([
@@ -80,6 +81,20 @@ export function mount(container, ctx) {
           s.close(); toast('削除しました'); render();
         } }, 'このタグを削除')), { title: 'タグ' });
     }
+
+    // 鬼さん 2026-10-24: tags can also be made here, not only while tagging a book.
+    const newTagInput = h('input', { type: 'text', placeholder: '新しいタグの名前', enterkeyhint: 'done' });
+    async function addTag() {
+      const name = newTagInput.value.trim();
+      if (!name) return;
+      const before = tags.length;
+      const tag = await db.createTag(name);
+      toast((await db.allTags()).length > before ? `「${tag.name}」を追加しました` : `「${tag.name}」はもうあります`);
+      openTagsOnRender = true;
+      render();
+    }
+    newTagInput.addEventListener('keydown', e => { if (e.key === 'Enter') addTag(); });
+    const tagAdd = h('div', { class: 'tag-add' }, newTagInput, h('button', { class: 'btn primary', onClick: addTag }, '追加'));
 
     // --- stale rule ---
     const examSelect = h('select', { onChange: e => db.setSetting('examTagId', e.target.value) },
@@ -156,8 +171,9 @@ export function mount(container, ctx) {
         h('label', { class: 'field' }, h('span', {}, '対象のタグ'), examSelect),
         h('label', { class: 'field' }, h('span', {}, '発行からこの年数がたったら「古いかも」'), yearsSelect)),
 
-      h('details', { class: 'card', style: { marginTop: '18px' } },
-        h('summary', { style: { cursor: 'pointer', fontWeight: '600', minHeight: '40px' } }, `タグの整理（${tags.length}個）`),
+      h('details', { class: 'card', style: { marginTop: '22px' }, open: openTagsOnRender, onToggle: e => { openTagsOnRender = e.target.open; } },
+        h('summary', { style: { cursor: 'pointer', fontWeight: '700', minHeight: '40px' } }, `タグの整理（${tags.length}個）`),
+        tagAdd,
         tagRows),
 
       h('p', { class: 'muted small', style: { marginTop: '24px' } },
