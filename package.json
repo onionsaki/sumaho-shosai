@@ -1,0 +1,12 @@
+{
+  "name": "sumaho-shosai",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "node --test \"tests/**/*.test.js\""
+  },
+  "devDependencies": {
+    "fake-indexeddb": "6.2.5",
+    "@xmldom/xmldom": "0.9.12"
+  }
+}
