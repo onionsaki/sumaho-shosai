@@ -19,6 +19,12 @@ export function h(tag, props = {}, ...children) {
   return el;
 }
 
+// replaceChildren that skips null/false placeholders (conditional pieces of a screen).
+export function fill(el, ...children) {
+  el.replaceChildren(...children.flat(Infinity).filter(c => c !== null && c !== undefined && c !== false));
+  return el;
+}
+
 export function toast(message, { action, ms = 3500 } = {}) {
   const root = document.getElementById('toasts');
   const item = h('div', { class: 'toast', role: 'status' }, h('span', {}, message));

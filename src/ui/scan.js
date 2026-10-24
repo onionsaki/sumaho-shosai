@@ -1,6 +1,6 @@
 // 読み取る tab: register mode (片付けのとき) and check mode (本屋で). Spec §4-1, §4-2.
 
-import { h, toast, segmented, formatDate } from './dom.js';
+import { h, fill, toast, segmented, formatDate } from './dom.js';
 import { startCamera } from '../camera.js';
 import { createFeedback } from '../feedback.js';
 import { classifyBarcode, toIsbn13 } from '../core/isbn.js';
@@ -9,6 +9,7 @@ import { applyScan } from '../core/session.js';
 import { checkResult } from '../core/check.js';
 import { workKeyOf } from '../core/volume.js';
 import { newBook, todayStr, LABELS } from '../core/model.js';
+import { openTagPicker, tagSummary } from './tags.js';
 
 const MODES = [['register', '登録（片付け）'], ['check', '確認（本屋）']];
 const OWNERSHIP_OPTIONS = [['owned', '持っている'], ['released', '手放した'], ['not_owned', '持っていない']];
@@ -45,6 +46,8 @@ export function mount(container, ctx) {
     try {
       stopCamera = await startCamera(video, {
         onCode: raw => {
+          const kind = classifyBarcode(raw).kind;
+          if (kind !== 'isbn' && kind !== 'magazine') return; // the price barcode next to the ISBN is ignored
           const code = confirmer.push(raw, performance.now());
           if (!code) return;
           chain = chain.then(() => handle(code)).catch(err => toast(`エラー：${err?.message ?? err}`));
@@ -78,29 +81,24 @@ export function mount(container, ctx) {
 
   // ---------- register mode ----------
   async function renderRegister() {
-    const session = { ...(await db.getSetting('lastSession')) };
-    const tags = await db.allTags();
-    const tagWrap = h('div', { class: 'chips' });
-    const renderTags = () => tagWrap.replaceChildren(...tags.map(t => h('button', {
-      class: session.tagIds.includes(t.id) ? 'chip on' : 'chip',
-      onClick: () => {
-        session.tagIds = session.tagIds.includes(t.id) ? session.tagIds.filter(x => x !== t.id) : [...session.tagIds, t.id];
-        renderTags();
-      },
-    }, t.name)));
+    const tags0 = await db.allTags();
+    const session = { ownership: 'owned', readStatus: 'read', tagIds: [], ...(await db.getSetting('lastSession')) };
+    session.tagIds = session.tagIds.filter(id => tags0.some(t => t.id === id));
+    const tags = tags0;
+    const tagWrap = h('div');
+    const renderTags = () => fill(tagWrap, tagSummary(tags, session.tagIds, () => {
+      openTagPicker({
+        title: 'この回に付けるタグ', tags, selected: session.tagIds,
+        onToggle: id => {
+          session.tagIds = session.tagIds.includes(id) ? session.tagIds.filter(x => x !== id) : [...session.tagIds, id];
+          renderTags();
+        },
+        onCreate: name => db.createTag(name),
+      });
+    }, 'タグを付ける'));
     renderTags();
-    const newTag = h('input', { type: 'text', placeholder: '新しいタグ' });
-    const addTag = async () => {
-      const name = newTag.value.trim();
-      if (!name) return;
-      const tag = await db.createTag(name);
-      if (!tags.some(t => t.id === tag.id)) tags.push(tag);
-      if (!session.tagIds.includes(tag.id)) session.tagIds.push(tag.id);
-      newTag.value = '';
-      renderTags();
-    };
 
-    body.replaceChildren(
+    fill(body, 
       h('button', { class: 'btn primary wide', onClick: async () => {
         await db.setSetting('lastSession', session);
         runRegister(session, tags);
@@ -112,7 +110,6 @@ export function mount(container, ctx) {
       segmented(READ_OPTIONS, session.readStatus, v => { session.readStatus = v; }),
       h('div', { class: 'section-title' }, 'タグ'),
       tagWrap,
-      h('div', { class: 'search-row', style: { marginTop: '8px' } }, newTag, h('button', { class: 'btn', onClick: addTag }, '追加')),
     );
   }
 
@@ -134,7 +131,7 @@ export function mount(container, ctx) {
     const render = () => {
       count.textContent = `今回 ${entries.filter(e => e.action === 'created').length}冊`;
       undoBtn.disabled = !entries.length;
-      log.replaceChildren(...entries.slice(0, 5).map(e => {
+      fill(log, ...entries.slice(0, 5).map(e => {
         const [cls, label] = stateOf(e);
         return h('li', {}, h('span', { class: `state ${cls}` }, label), h('span', {}, e.title || e.isbn));
       }));
@@ -173,7 +170,7 @@ export function mount(container, ctx) {
       const created = entries.filter(e => e.action === 'created');
       const missing = created.filter(e => e.lookup === 'not_found').length;
       const waiting = created.filter(e => e.lookup === 'pending').length;
-      body.replaceChildren(h('div', { class: 'card summary' },
+      fill(body, h('div', { class: 'card summary' },
         h('div', { class: 'scan-count' }, '今回の結果'),
         h('div', {}, `登録 ${created.length}冊・登録済み ${entries.length - created.length}冊・見つからなかった ${missing}冊`),
         waiting ? h('div', { class: 'muted small' }, `${waiting}冊は本の情報を取得中です。アプリを開いている間に埋まります。`) : null,
@@ -182,7 +179,7 @@ export function mount(container, ctx) {
           missing ? h('button', { class: 'btn', onClick: () => { location.hash = 'shelf?review=1'; } }, 'あとで確認を見る') : null)));
     }
 
-    body.replaceChildren(
+    fill(body, 
       h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })),
       h('div', { class: 'muted small', style: { marginTop: '6px' } },
         `${LABELS.ownership[session.ownership]}・${LABELS.read[session.readStatus]}${tagNames.length ? `・${tagNames.join('、')}` : ''}`),
@@ -224,13 +221,14 @@ export function mount(container, ctx) {
       }));
       if (!info) lookup.enqueue(saved.id);
       toast('読みたいに追加しました');
-      card.replaceChildren();
+      fill(card);
     }
 
     async function handle(code) {
       const c = classifyBarcode(code);
       if (c.kind === 'magazine') { feedback.error(); toast('雑誌のバーコードです'); return; }
       if (c.kind !== 'isbn') return;
+      enrichToken++; // any newer scan supersedes a pending title lookup
       const book = await db.getBookByIsbn(c.isbn);
       const workBooks = book?.workKey ? await db.booksByWorkKey(book.workKey) : [];
       const r = checkResult(book, workBooks);
@@ -251,14 +249,20 @@ export function mount(container, ctx) {
       const titleEl = h('div', { class: 'title' }, book?.title || '');
       const noteEl = h('div', { class: 'small' }, note);
       const extra = h('div');
-      card.replaceChildren(h('div', { class: `result-card ${r.status}` },
+      fill(card, h('div', { class: `result-card ${r.status}` },
         h('div', { class: 'big' }, big), titleEl, noteEl, ...workLines(book, r.work), extra));
 
       if (r.status !== 'unregistered') return;
       const addBtn = info => h('button', { class: 'btn', style: { marginTop: '10px' }, onClick: () => addWanted(info, c.isbn) }, '読みたいに追加');
       if (!navigator.onLine) { extra.append(addBtn(null)); return; }
-      const info = await lookup.fetchInfo(c.isbn);
-      if (disposed) return;
+      const token = enrichToken;
+      enrich(c.isbn, token, titleEl, noteEl, extra, addBtn); // not awaited: the next scan answers at once
+    }
+
+    let enrichToken = 0;
+    async function enrich(isbn, token, titleEl, noteEl, extra, addBtn) {
+      const info = await lookup.fetchInfo(isbn);
+      if (disposed || token !== enrichToken) return; // a newer scan replaced this card
       titleEl.textContent = info?.title ?? '';
       noteEl.textContent = info ? '' : '登録なし';
       if (info && info.volume !== null) {
@@ -272,7 +276,7 @@ export function mount(container, ctx) {
       extra.append(addBtn(info));
     }
 
-    body.replaceChildren(
+    fill(body, 
       h('p', { class: 'muted small' }, '本屋で、持っているかを確かめます。何も保存しません。'),
       h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })),
       statusEl,

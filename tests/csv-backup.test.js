@@ -96,6 +96,14 @@ test('validateBackup rejects foreign json', () => {
   assert.equal(typeof validateBackup({ books: [] }).reason, 'string');
 });
 
+test('validateBackup checks tags and settings rows too', () => {
+  const base = { app: 'sumaho-shosai', version: 1, books: [], tags: [], settings: [] };
+  assert.equal(validateBackup({ ...base, tags: [{ name: 'x' }] }).ok, false);
+  assert.equal(validateBackup({ ...base, tags: [null] }).ok, false);
+  assert.equal(validateBackup({ ...base, settings: [{ value: 1 }] }).ok, false);
+  assert.equal(validateBackup({ ...base, tags: [{ id: 'a', name: 'x', order: 0 }], settings: [{ key: 'k', value: 1 }] }).ok, true);
+});
+
 test('shouldRemindBackup', () => {
   const old = newBook({ createdAt: '2026-09-01T00:00:00Z' });
   assert.equal(shouldRemindBackup({ lastBackupAt: '', books: [], today: '2026-10-24' }), false);

@@ -104,6 +104,14 @@ test('replaceAll keeps the backed-up updatedAt', async () => {
   assert.equal((await db.getBook(book.id)).updatedAt, '2026-01-01T00:00:00.000Z');
 });
 
+test('replaceAll with a broken row changes nothing', async () => {
+  const db = await fresh();
+  await db.putBook(newBook({ title: 'keep' }));
+  await assert.rejects(db.replaceAll({ books: [newBook({ title: 'new' })], tags: [{ name: 'no id' }], settings: [] }));
+  assert.deepEqual((await db.allBooks()).map(b => b.title), ['keep']);
+  assert.equal((await db.allTags()).length, SEED_TAGS.length);
+});
+
 test('allSettings lists key/value pairs', async () => {
   const db = await fresh();
   const s = await db.allSettings();

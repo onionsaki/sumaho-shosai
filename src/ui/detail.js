@@ -1,6 +1,6 @@
 // Book detail sheet (spec §4-4).
 
-import { h, sheet, toast, confirmDialog, segmented, formatDate } from './dom.js';
+import { h, fill, sheet, toast, confirmDialog, segmented, formatDate } from './dom.js';
 import { coverEl, displayTitle } from './shelf.js';
 import { LABELS, newBook, todayStr } from '../core/model.js';
 import { toIsbn13 } from '../core/isbn.js';
@@ -41,9 +41,10 @@ export async function openDetail(bookId, ctx) {
       [book.publisher, book.issued && book.issued.replace('-', '年') + (book.issued.includes('-') ? '月' : '年')].filter(Boolean).join('・'),
       [book.pages ? `${book.pages}ページ` : '', book.price ? `${book.price.toLocaleString()}円` : ''].filter(Boolean).join('・'),
       book.isbn ? `ISBN ${book.isbn}` : 'ISBNなし',
+      `登録した日 ${formatDate(todayStr(new Date(book.createdAt)))}`,
     ].filter(Boolean);
     const status = book.lookup === 'pending' ? '本の情報を取得中です' : book.lookup === 'not_found' ? '本の情報が見つかりませんでした。「情報を直す」で入力できます' : '';
-    head.replaceChildren(h('div', { class: 'detail-head' },
+    fill(head, h('div', { class: 'detail-head' },
       coverEl(book, true),
       h('div', {},
         h('div', { class: 'title' }, displayTitle(book)),
@@ -56,7 +57,7 @@ export async function openDetail(bookId, ctx) {
   const tagRow = h('div', { class: 'chips' });
   function renderTags() {
     const byId = new Map(tags.map(t => [t.id, t]));
-    tagRow.replaceChildren(
+    fill(tagRow, 
       ...book.tagIds.map(id => byId.get(id)).filter(Boolean).map(t => h('button', {
         class: 'chip on', 'aria-label': `${t.name}を外す`,
         onClick: async () => { await save({ tagIds: book.tagIds.filter(x => x !== t.id) }); renderTags(); },
@@ -71,7 +72,7 @@ export async function openDetail(bookId, ctx) {
       const q = normalizeForSearch(input.value);
       const hits = tags.filter(t => !q || normalizeForSearch(t.name).includes(q));
       const exact = tags.some(t => normalizeForSearch(t.name) === q);
-      listEl.replaceChildren(
+      fill(listEl, 
         ...hits.map(t => h('button', {
           class: book.tagIds.includes(t.id) ? 'chip on' : 'chip',
           onClick: async () => {
@@ -105,7 +106,7 @@ export async function openDetail(bookId, ctx) {
       input.addEventListener('change', () => save({ [key]: input.value }));
       return h('label', { class: 'field' }, h('span', {}, label), input);
     };
-    dates.replaceChildren(h('div', { class: 'field-row' },
+    fill(dates, h('div', { class: 'field-row' },
       book.readStatus === 'read' || book.readAt ? dateField('読んだ日', 'readAt') : h('div'),
       book.ownership === 'released' || book.releasedAt ? dateField('手放した日', 'releasedAt') : h('div')));
   }
@@ -180,7 +181,7 @@ export async function openDetail(bookId, ctx) {
     renderHead();
     renderTags();
     renderDates();
-    content.replaceChildren(
+    fill(content, 
       head,
       h('div', { class: 'section-title' }, '持っているか'),
       segmented(OWNERSHIP_OPTIONS, book.ownership, async v => {
@@ -197,7 +198,6 @@ export async function openDetail(bookId, ctx) {
       tagRow,
       h('div', { class: 'section-title' }, 'メモ'),
       memo,
-      h('p', { class: 'muted small' }, `登録 ${formatDate(todayStr(new Date(book.createdAt)))}`),
       h('div', { class: 'row-buttons', style: { marginTop: '8px' } },
         h('button', { class: 'btn', onClick: openEdit }, '情報を直す'),
         h('button', { class: 'btn', disabled: !book.isbn, onClick: () => { lookup.refetch(book.id); toast('本の情報を取り直しています'); } }, '本の情報を取り直す')),

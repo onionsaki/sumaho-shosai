@@ -1,6 +1,6 @@
 // Add without a barcode: title search, ISBN entry, manual entry (spec §4-5).
 
-import { h, sheet, toast, segmented } from './dom.js';
+import { h, fill, sheet, toast, segmented } from './dom.js';
 import { LABELS, newBook, todayStr } from '../core/model.js';
 import { toIsbn13 } from '../core/isbn.js';
 import { workKeyOf } from '../core/volume.js';
@@ -59,12 +59,12 @@ export function openAdd(ctx) {
     const run = async () => {
       if (!title.value.trim()) { status.textContent = '書名を入れてください'; return; }
       status.textContent = '国立国会図書館に問い合わせています…（時間がかかることがあります）';
-      results.replaceChildren();
-      picked.replaceChildren();
+      fill(results);
+      fill(picked);
       try {
         const items = await lookup.searchByTitle(title.value.trim(), author.value.trim());
         status.textContent = items.length ? `${items.length}件見つかりました。登録する本を選んでください` : '見つかりませんでした。「手で入れる」から登録できます';
-        results.replaceChildren(...items.map(info => h('li', { class: 'result-item', onClick: () => pick(info) },
+        fill(results, ...items.map(info => h('li', { class: 'result-item', onClick: () => pick(info) },
           h('div', { style: { fontWeight: '600' } }, info.volume !== null && !/\d\s*$/.test(info.title) ? `${info.title} ${info.volume}巻` : info.title),
           h('div', { class: 'small muted' }, [(info.authors ?? []).join('、'), info.publisher, info.issued].filter(Boolean).join('・')))));
       } catch (err) {
@@ -72,9 +72,9 @@ export function openAdd(ctx) {
       }
     };
     const pick = info => {
-      results.replaceChildren();
+      fill(results);
       status.textContent = '';
-      picked.replaceChildren(h('div', { class: 'card' },
+      fill(picked, h('div', { class: 'card' },
         h('div', { style: { fontWeight: '700' } }, info.title),
         h('div', { class: 'small muted' }, [(info.authors ?? []).join('、'), info.publisher, info.issued].filter(Boolean).join('・'))),
       options(),
@@ -86,7 +86,7 @@ export function openAdd(ctx) {
       } }, 'この本を登録する'));
     };
     title.addEventListener('keydown', e => { if (e.key === 'Enter') run(); });
-    body.replaceChildren(
+    fill(body, 
       h('label', { class: 'field' }, h('span', {}, '書名'), title),
       h('label', { class: 'field' }, h('span', {}, '著者'), author),
       h('button', { class: 'btn primary wide', onClick: run }, '探す'),
@@ -96,7 +96,7 @@ export function openAdd(ctx) {
   function showIsbn() {
     const input = h('input', { type: 'text', inputmode: 'numeric', placeholder: '978… または 10桁' });
     const status = h('p', { class: 'small muted' });
-    body.replaceChildren(
+    fill(body, 
       h('label', { class: 'field' }, h('span', {}, 'ISBN（ハイフンがあってもよい）'), input),
       options(),
       h('button', { class: 'btn primary wide', style: { marginTop: '14px' }, onClick: async () => {
@@ -141,7 +141,7 @@ export function openAdd(ctx) {
         workKey: workKeyOf(workTitle || title, authors),
       }));
     });
-    body.replaceChildren(
+    fill(body, 
       field('書名（必須）', 'title'),
       field('著者（複数なら「、」で区切る）', 'authors'),
       h('div', { class: 'field-row' }, field('作品名（続き物なら）', 'workTitle'), field('巻', 'volume', { inputmode: 'numeric' })),

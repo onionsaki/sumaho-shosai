@@ -1,6 +1,6 @@
 // 設定 tab: tags, stale rule, CSV, backup, stats (spec §4-6, §6).
 
-import { h, toast, confirmDialog, downloadText, formatDate, sheet } from './dom.js';
+import { h, fill, toast, confirmDialog, downloadText, formatDate, sheet } from './dom.js';
 import { booksToCsv, csvFileName, parseCsv, rowsToBooks } from '../core/csv.js';
 import { makeBackup, validateBackup, backupFileName } from '../core/backup.js';
 import { ownedPriceSum, countOwned } from '../core/stats.js';
@@ -110,12 +110,17 @@ export function mount(container, ctx) {
       const check = validateBackup(data);
       if (!check.ok) { toast(check.reason); return; }
       if (!(await confirmDialog(`今のデータを全部、このバックアップ（${data.books.length}冊、${formatDate(todayStr(new Date(data.exportedAt)))}作成）の中身に置き換えます。よろしいですか？`, '置き換える'))) return;
-      await db.replaceAll({ books: data.books, tags: data.tags, settings: data.settings });
+      try {
+        await db.replaceAll({ books: data.books, tags: data.tags, settings: data.settings });
+      } catch {
+        toast('戻せませんでした。今のデータはそのままです');
+        return;
+      }
       toast('戻しました');
       setTimeout(() => location.reload(), 600);
     });
 
-    container.replaceChildren(
+    fill(container, 
       h('div', { class: 'section-title' }, '情報'),
       h('div', { class: 'card' },
         h('div', { class: 'stat' }, h('span', {}, '持っている本'), h('span', {}, `${countOwned(books).toLocaleString()}冊`)),
@@ -151,8 +156,9 @@ export function mount(container, ctx) {
         h('label', { class: 'field' }, h('span', {}, '対象のタグ'), examSelect),
         h('label', { class: 'field' }, h('span', {}, '発行からこの年数がたったら「古いかも」'), yearsSelect)),
 
-      h('div', { class: 'section-title' }, 'タグ'),
-      h('div', { class: 'card' }, tagRows),
+      h('details', { class: 'card', style: { marginTop: '18px' } },
+        h('summary', { style: { cursor: 'pointer', fontWeight: '600', minHeight: '40px' } }, `タグの整理（${tags.length}個）`),
+        tagRows),
 
       h('p', { class: 'muted small', style: { marginTop: '24px' } },
         '本の情報は、国立国会図書館サーチのAPIと openBD を利用して取得しています。'),

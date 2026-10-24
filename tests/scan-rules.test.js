@@ -16,11 +16,11 @@ test('confirmer needs two reads and then cools down', () => {
   assert.equal(c.push('A', 3300), 'A');
 });
 
-test('confirmer resets on a different code or a slow second read', () => {
+test('confirmer counts per code and resets on a slow second read', () => {
   const c = createConfirmer();
   c.push('A', 0);
   assert.equal(c.push('B', 50), null);
-  assert.equal(c.push('A', 100), null);
+  assert.equal(c.push('A', 100), 'A'); // B in between no longer resets A
   const d = createConfirmer();
   d.push('A', 0);
   assert.equal(d.push('A', 1600), null);
@@ -45,7 +45,7 @@ test('applyScan creates with session values', () => {
   assert.equal(r.book.lookup, 'pending');
   assert.equal(r.book.ownership, 'owned');
   assert.equal(r.book.readStatus, 'read');
-  assert.equal(r.book.readAt, '2026-10-24');
+  assert.equal(r.book.readAt, ''); // the reading date is unknown when cleaning
   assert.equal(r.book.releasedAt, '');
   assert.deepEqual(r.book.tagIds, ['t1']);
 });
@@ -127,4 +127,16 @@ test('confirmer with a 3 s window accepts slow phones', () => {
   const c = createConfirmer({ windowMs: 3000 });
   assert.equal(c.push('A', 0), null);
   assert.equal(c.push('A', 1400), 'A'); // 1.4 s per read still confirms
+});
+
+test('confirmer confirms the ISBN even when another code shows up in the same frames', () => {
+  const c = createConfirmer({ windowMs: 3000 });
+  assert.equal(c.push('9784763135476', 0), null);
+  assert.equal(c.push('1920030014008', 10), null);
+  assert.equal(c.push('9784763135476', 300), '9784763135476');
+});
+
+test('applyScan does not invent a read date at registration', () => {
+  const r = applyScan(undefined, { ownership: 'owned', readStatus: 'read', tagIds: [] }, '9784763135476', '2026-10-24');
+  assert.equal(r.book.readAt, '');
 });

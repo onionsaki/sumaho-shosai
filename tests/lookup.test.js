@@ -211,3 +211,21 @@ test('searchByTitle returns one item per isbn and throws when offline', async ()
   const off = make(db, fakeFetch([]), fakeClock(), { isOnline: () => false });
   await assert.rejects(off.searchByTitle('x', ''), /offline/);
 });
+
+test('only one NDL request is in flight across the queue, fetchInfo and title search', async () => {
+  const db = await fresh();
+  const a = await db.putBook(newBook({ isbn: '9784763135476', lookup: 'pending' }));
+  let inFlight = 0;
+  let max = 0;
+  const fetchImpl = async url => {
+    const ndl = url.includes('ndlsearch');
+    if (ndl) { inFlight++; max = Math.max(max, inFlight); }
+    await new Promise(r => setTimeout(r, 5));
+    if (ndl) inFlight--;
+    return { status: 200, text: async () => (url.includes('openbd') ? '[null]' : EMPTY_RSS) };
+  };
+  const q = make(db, fetchImpl, { now: () => 0, sleep: async () => {} }, { minIntervalMs: 0 });
+  q.enqueue(a.id);
+  await Promise.all([q.fetchInfo('9784088725093'), q.searchByTitle('x', ''), q.idle()]);
+  assert.equal(max, 1);
+});

@@ -145,11 +145,18 @@ export async function openDb(name = 'sumaho-shosai') {
 
     async replaceAll({ books, tags, settings }) {
       const { tx, get } = store(['books', 'tags', 'settings'], 'readwrite');
-      for (const n of ['books', 'tags', 'settings']) get(n).clear();
-      for (const book of books) get('books').put(stripIsbn(book));
-      for (const tag of tags) get('tags').put(tag);
-      for (const row of settings) get('settings').put(row);
-      await done(tx);
+      const finished = done(tx);
+      try {
+        for (const n of ['books', 'tags', 'settings']) get(n).clear();
+        for (const book of books) get('books').put(stripIsbn(book));
+        for (const tag of tags) get('tags').put(tag);
+        for (const row of settings) get('settings').put(row);
+      } catch (err) {
+        tx.abort(); // nothing is cleared when any row is broken
+        await finished.catch(() => {});
+        throw err;
+      }
+      await finished;
     },
   };
   return api;

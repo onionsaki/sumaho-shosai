@@ -11,7 +11,7 @@ export function applyScan(existing, session, isbn, today) {
       readStatus,
       tagIds: [...tagIds],
       lookup: 'pending',
-      readAt: readStatus === 'read' ? today : '',
+      readAt: '', // unknown when registering while tidying up; the registration date is createdAt
       releasedAt: ownership === 'released' ? today : '',
     });
     return { action: 'created', book, before: null, changed: true };

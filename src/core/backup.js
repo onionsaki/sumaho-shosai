@@ -16,6 +16,12 @@ export function validateBackup(obj) {
   if (!obj.books.every(b => b && typeof b.id === 'string' && typeof b.title === 'string')) {
     return { ok: false, reason: '本のデータが壊れています' };
   }
+  if (!obj.tags.every(t => t && typeof t.id === 'string' && typeof t.name === 'string')) {
+    return { ok: false, reason: 'タグのデータが壊れています' };
+  }
+  if (!obj.settings.every(r => r && typeof r.key === 'string')) {
+    return { ok: false, reason: '設定のデータが壊れています' };
+  }
   return { ok: true };
 }
 

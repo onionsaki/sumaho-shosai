@@ -29,6 +29,12 @@ export function createLookupQueue({
   let running = false;
   let current = null;
   let lastNdlAt = -Infinity;
+  let lane = Promise.resolve(); // only one NDL request at a time, from any caller
+  const inLane = fn => {
+    const run = lane.then(fn, fn);
+    lane = run.catch(() => {});
+    return run;
+  };
 
   async function fetchText(url) {
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
@@ -53,14 +59,18 @@ export function createLookupQueue({
   async function ndlFetch(url) {
     for (let attempt = 0; ; attempt++) {
       if (!isOnline()) throw new OfflineError();
-      await throttle();
-      try {
-        const res = await fetchText(url);
-        if (res.status === 200) return res.text;
-        if (res.status !== 429 && res.status < 500) return null;
-      } catch (err) {
-        if (!(err instanceof RetryableError)) throw err;
-      }
+      const outcome = await inLane(async () => {
+        await throttle();
+        try {
+          const res = await fetchText(url);
+          if (res.status === 200) return { text: res.text };
+          if (res.status !== 429 && res.status < 500) return { text: null };
+        } catch (err) {
+          if (!(err instanceof RetryableError)) throw err;
+        }
+        return null; // retry
+      });
+      if (outcome) return outcome.text;
       if (attempt >= retryDelaysMs.length) throw new RetryableError('exhausted');
       await sleep(retryDelaysMs[attempt]);
     }

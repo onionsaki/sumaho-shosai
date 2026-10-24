@@ -1,6 +1,7 @@
 // 本棚 tab: search, filters, book and work views (spec §4-3).
 
-import { h, sheet, downloadText } from './dom.js';
+import { h, fill, downloadText } from './dom.js';
+import { openTagPicker as pickTags } from './tags.js';
 import { filterBooks, sortBooks } from '../core/search.js';
 import { isStale } from '../core/stale.js';
 import { groupWorks } from '../core/series.js';
@@ -66,7 +67,7 @@ export function mount(container, ctx) {
     const tagLabel = state.tagIds.length
       ? state.tagIds.map(id => tags.find(t => t.id === id)?.name).filter(Boolean).join('・')
       : 'タグ';
-    filters.replaceChildren(
+    fill(filters, 
       ...Object.entries(LABELS.ownership).map(([v, label]) => chip(label, state.ownership.includes(v), () => { state.ownership = toggle(state.ownership, v); render(); })),
       ...Object.entries(LABELS.read).map(([v, label]) => chip(label, state.readStatus.includes(v), () => { state.readStatus = toggle(state.readStatus, v); render(); })),
       chip(`${tagLabel} ▾`, state.tagIds.length > 0, openTagPicker),
@@ -80,17 +81,14 @@ export function mount(container, ctx) {
   }
 
   function openTagPicker() {
-    const wrap = h('div', { class: 'chips' });
-    const draw = () => wrap.replaceChildren(...tags.map(t => h('button', {
-      class: state.tagIds.includes(t.id) ? 'chip on' : 'chip',
-      onClick: () => { state.tagIds = toggle(state.tagIds, t.id); draw(); render(); },
-    }, t.name)));
-    draw();
-    sheet(h('div', {}, h('p', { class: 'muted small' }, '選んだタグが全部付いている本を出します。'), wrap), { title: 'タグで絞り込む' });
+    pickTags({
+      title: 'タグで絞り込む', tags, selected: state.tagIds, note: '選んだタグが全部付いている本を出します。',
+      onToggle: id => { state.tagIds = toggle(state.tagIds, id); render(); },
+    });
   }
 
   function renderBanners() {
-    banners.replaceChildren();
+    fill(banners);
     if (shouldRemindBackup({ lastBackupAt: settings.lastBackupAt ?? '', books, today: todayStr() })) {
       banners.append(h('div', { class: 'banner' },
         h('span', {}, 'しばらくバックアップを取っていません'),
@@ -140,7 +138,7 @@ export function mount(container, ctx) {
 
   let currentRows = [];
   function renderList() {
-    list.replaceChildren(...currentRows.slice(0, shown).map(r => r.el()));
+    fill(list, ...currentRows.slice(0, shown).map(r => r.el()));
     more.textContent = currentRows.length > shown ? 'さらに読み込み中…' : '';
   }
 
@@ -149,7 +147,7 @@ export function mount(container, ctx) {
     const filtered = sortBooks(filterBooks(books, state, ctxFor()), state.order);
     currentRows = rows(filtered);
     renderFilters();
-    toolbar.replaceChildren(
+    fill(toolbar, 
       h('span', { class: 'count' }, `${filtered.length}冊`),
       h('div', { class: 'row-buttons', style: { flex: '0 0 auto' } },
         h('button', { class: 'chip', onClick: () => { state.view = state.view === 'books' ? 'works' : 'books'; render(); } },
