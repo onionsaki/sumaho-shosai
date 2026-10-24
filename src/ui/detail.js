@@ -3,7 +3,7 @@
 import { h, fill, sheet, toast, confirmDialog, segmented, formatDate } from './dom.js';
 import { coverEl, displayTitle } from './shelf.js';
 import { LABELS, newBook, todayStr } from '../core/model.js';
-import { toIsbn13, isMagazineCode } from '../core/isbn.js';
+import { toIsbn13, isMagazineCode, magazineBase, magazineKey } from '../core/isbn.js';
 import { workKeyOf } from '../core/volume.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { icon } from './icons.js';
@@ -44,7 +44,9 @@ export async function openDetail(bookId, ctx) {
       [book.pages ? `${book.pages}ページ` : '', book.price ? `${book.price.toLocaleString()}円` : ''].filter(Boolean).join('・'),
       book.isbn ? `ISBN ${book.isbn}` : 'ISBNなし',
     ].filter(Boolean);
-    const status = book.lookup === 'pending' ? '本の情報を取得中です' : book.lookup === 'not_found' ? '本の情報が見つかりませんでした。「情報を直す」で入力できます' : '';
+    const status = book.lookup === 'pending' ? '本の情報を取得中です'
+      : book.lookup === 'not_found' && isMagazineCode(book.isbn) ? '楽天に載っていない号でした。「情報を直す」で雑誌名を入れると、同じ雑誌の別の号もその名前で登録されます'
+      : book.lookup === 'not_found' ? '本の情報が見つかりませんでした。「情報を直す」で入力できます' : '';
     fill(head, h('div', { class: 'detail-head' },
       h('button', { class: 'cover-wrap', 'aria-label': '写真を撮って表紙にする', onClick: takePhoto },
         coverEl(book, true), h('span', { class: 'cam' }, icon('camera'))),
@@ -172,15 +174,22 @@ export async function openDetail(bookId, ctx) {
         if (!f.title.value.trim()) { msg.textContent = '書名を入れてください'; return; }
         const num = el => (el.value.trim() === '' || Number.isNaN(Number(el.value.normalize('NFKC'))) ? null : Number(el.value.normalize('NFKC')));
         const authors = f.authors.value.split('、').map(x => x.trim()).filter(Boolean);
-        const workTitle = f.workTitle.value.trim();
         const title = f.title.value.trim();
+        const magazine = isMagazineCode(isbn);
+        // A magazine's 作品名 is the magazine itself, so every issue groups together and later issues can borrow it.
+        const workTitle = f.workTitle.value.trim() || (magazine ? magazineBase(title) : '');
         await save({
           title, titleKana: f.titleKana.value.trim(), authors, publisher: f.publisher.value.trim(),
           issued: f.issued.value.trim(), isbn, pages: num(f.pages), price: num(f.price), workTitle,
-          volume: num(f.volume), format, workKey: workKeyOf(workTitle || title, authors),
+          volume: num(f.volume), format, workKey: magazine ? magazineKey(isbn) : workKeyOf(workTitle || title, authors),
           // A book fixed by hand leaves あとで確認.
           lookup: book.lookup === 'not_found' || (book.lookup === 'pending' && !isbn) ? 'manual' : book.lookup,
         });
+        if (magazine && workTitle) {
+          for (const other of await db.booksByWorkKey(magazineKey(isbn))) {
+            if (other.id !== book.id && other.lookup === 'not_found') lookup.refetch(other.id);
+          }
+        }
         editSheet.close();
         render();
       } }, '保存する'));

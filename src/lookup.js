@@ -5,7 +5,7 @@ import { ndlIsbnUrl, ndlTitleSearchUrl, parseNdlOpenSearch, pickBestNdlItem } fr
 import { openBdUrl, parseOpenBd } from './core/openbd.js';
 import { mergeBookInfo } from './core/merge.js';
 import { rakutenIsbnUrl, parseRakutenCover, rakutenMagazineUrl, parseRakutenMagazine } from './core/rakuten.js';
-import { isMagazineCode } from './core/isbn.js';
+import { isMagazineCode, parseMagazineCode, magazineTitle, magazineBase, magazineKey } from './core/isbn.js';
 import { newBook } from './core/model.js';
 
 class RetryableError extends Error {}
@@ -131,17 +131,35 @@ export function createLookupQueue({
     if (!book || !book.isbn || !isOnline()) return;
     if (isMagazineCode(book.isbn)) {
       const info = await magazineInfo(book.isbn);
-      if (info === undefined) return; // stays pending until keys or network are there
       const latest = await db.getBook(id);
       if (!latest) return;
-      const patch = info ? {
-        title: overwrite || !latest.title ? info.title : latest.title,
-        publisher: overwrite || !latest.publisher ? info.publisher : latest.publisher,
-        issued: overwrite || !latest.issued ? info.issued : latest.issued,
-        coverUrl: latest.coverUrl || info.coverUrl,
-        lookup: 'ok',
-      } : { lookup: 'not_found' };
-      const saved = await db.putBook({ ...latest, ...patch });
+      const key = magazineKey(book.isbn);
+      const siblings = (await db.booksByWorkKey(key)).filter(b => b.id !== id);
+      const known = siblings.map(b => b.workTitle || magazineBase(b.title)).find(Boolean) ?? '';
+      let patch;
+      if (info) {
+        patch = {
+          title: overwrite || !latest.title ? info.title : latest.title,
+          publisher: overwrite || !latest.publisher ? info.publisher : latest.publisher,
+          issued: overwrite || !latest.issued ? info.issued : latest.issued,
+          coverUrl: latest.coverUrl || info.coverUrl,
+          workTitle: latest.workTitle || magazineBase(info.title) || known,
+          lookup: 'ok',
+        };
+      } else if (known || info === null) {
+        // Rakuten has no such issue (back numbers), or cannot be asked: name it from an earlier issue.
+        const issue = parseMagazineCode(book.isbn);
+        patch = latest.title && !overwrite ? { lookup: latest.lookup } : {
+          title: magazineTitle(issue, known),
+          issued: latest.issued || `${issue.year}-${String(issue.month).padStart(2, '0')}`,
+          workTitle: latest.workTitle || known,
+          publisher: latest.publisher || siblings.find(b => b.publisher)?.publisher || '',
+          lookup: known ? 'ok' : 'not_found',
+        };
+      } else {
+        return; // no keys and no earlier issue: stays pending until there is a way to name it
+      }
+      const saved = await db.putBook({ ...latest, ...patch, workKey: key });
       for (const cb of listeners) cb(saved);
       return;
     }

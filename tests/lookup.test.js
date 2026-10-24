@@ -291,3 +291,29 @@ test('fetchMagazine returns the info for a magazine code', async () => {
   assert.equal(info.title, 'T');
   assert.equal(info.isbn, '4910203141163');
 });
+
+test('a magazine issue Rakuten does not know takes its name from another issue of the same magazine', async () => {
+  const db = await fresh();
+  await db.putBook(newBook({ isbn: '4910240340155', title: '月刊テスト 2025年1月号', workTitle: '月刊テスト', workKey: 'magazine:24034', lookup: 'ok' }));
+  const book = await db.putBook(newBook({ isbn: '4910240340353', lookup: 'pending' }));
+  const fetchImpl = fakeFetch([['BooksMagazine', { status: 200, body: '{"Items":[]}' }]]);
+  const q = make(db, fetchImpl, fakeClock(), { getRakutenKeys: async () => ({ appId: 'A', accessKey: 'K' }) });
+  q.enqueue(book.id);
+  await q.idle();
+  const saved = await db.getBook(book.id);
+  assert.equal(saved.title, '月刊テスト 2025年3月号');
+  assert.equal(saved.workKey, 'magazine:24034');
+  assert.equal(saved.lookup, 'ok');
+});
+
+test('an unknown magazine issue with no earlier issue gets a placeholder name and waits for a title', async () => {
+  const db = await fresh();
+  const book = await db.putBook(newBook({ isbn: '4910240340155', lookup: 'pending' }));
+  const fetchImpl = fakeFetch([['BooksMagazine', { status: 200, body: '{"Items":[]}' }]]);
+  const q = make(db, fetchImpl, fakeClock(), { getRakutenKeys: async () => ({ appId: 'A', accessKey: 'K' }) });
+  q.enqueue(book.id);
+  await q.idle();
+  const saved = await db.getBook(book.id);
+  assert.match(saved.title, /^雑誌24034 20\d\d年1月号$/);
+  assert.equal(saved.lookup, 'not_found');
+});

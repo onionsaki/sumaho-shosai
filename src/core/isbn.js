@@ -44,3 +44,31 @@ export function classifyBarcode(raw) {
 }
 
 export const isMagazineCode = code => /^491[0-9]{10}$/.test(String(code ?? ''));
+
+// Japanese magazine barcode: 491 + spare digit + magazine number (5) + issue month (2) + last digit of year + check digit.
+// Rakuten only knows issues on sale, so older issues are named from these parts (鬼さん 2026-10-25).
+export function parseMagazineCode(code, currentYear = new Date().getFullYear()) {
+  if (!isMagazineCode(code)) return null;
+  const s = String(code);
+  const magazineCode = s.slice(4, 9);
+  const month = Number(s.slice(9, 11));
+  let year = Math.floor(currentYear / 10) * 10 + Number(s[11]);
+  // Issues go on sale a little ahead (a January issue in December), never most of a year ahead.
+  if (year > currentYear + 1 || (year === currentYear + 1 && month > 3)) year -= 10;
+  return { magazineCode, month, year };
+}
+
+export const magazineTitle = ({ magazineCode, month, year }, baseTitle = '') =>
+  `${baseTitle || `雑誌${magazineCode}`} ${year}年${month}月号`;
+
+// The magazine's own name without the issue part; '' for the placeholder name.
+export function magazineBase(title) {
+  const base = String(title ?? '').normalize('NFKC')
+    .replace(/\s*\d{4}\s*年\s*(\d{1,2}(\s*[/／]\s*\d{1,2})?\s*月?\s*号?)?.*$/, '')
+    .replace(/\s*\d{1,2}(\s*[/／]\s*\d{1,2})?\s*月?号\s*$/, '')
+    .trim();
+  return /^雑誌\d{5}$/.test(base) ? '' : base;
+}
+
+// All issues of one magazine share this key, so they group as one work on the shelf.
+export const magazineKey = code => `magazine:${String(code).slice(4, 9)}`;
