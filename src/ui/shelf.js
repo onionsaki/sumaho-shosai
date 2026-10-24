@@ -19,12 +19,20 @@ const state = {
   view: 'books', order: 'kana',
 };
 
+let photoSource = null;
+export const setPhotoSource = fn => { photoSource = fn; };
+
 export function coverEl(book, big = false) {
   const placeholder = () => h('div', { class: big ? 'cover big' : 'cover' }, (book.title || book.isbn || '？').slice(0, 8));
-  if (!coverSrc(book)) return placeholder();
-  const img = h('img', { class: big ? 'cover big' : 'cover', src: coverSrc(book), alt: '', loading: 'lazy' });
-  img.addEventListener('error', () => img.replaceWith(placeholder()));
-  return img;
+  const make = src => {
+    const img = h('img', { class: big ? 'cover big' : 'cover', src, alt: '', loading: 'lazy' });
+    img.addEventListener('error', () => img.replaceWith(placeholder()));
+    return img;
+  };
+  let el = coverSrc(book) ? make(coverSrc(book)) : placeholder();
+  // Photos sit in their own store; fetch one only when its row is drawn.
+  if (book.hasPhoto && photoSource) photoSource(book.id).then(url => { if (url) { const n = make(url); el.replaceWith(n); el = n; } });
+  return el;
 }
 
 export function displayTitle(book) {

@@ -120,3 +120,13 @@ test('file names', () => {
   assert.equal(csvFileName('2026-10-24'), '蔵書_20261024.csv');
   assert.equal(backupFileName('2026-10-24'), 'スマホ書斎_バックアップ_20261024.json');
 });
+
+test('backups carry photos, and older backups without photos still validate', async () => {
+  const { makeBackup, validateBackup } = await import('../src/core/backup.js');
+  const b = makeBackup({ books: [], tags: [], settings: [], photos: [{ id: 'x', data: 'data:p' }] }, '2026-10-25T00:00:00.000Z');
+  assert.deepEqual(b.photos, [{ id: 'x', data: 'data:p' }]);
+  assert.equal(validateBackup(b).ok, true);
+  const { photos, ...old } = b;
+  assert.equal(validateBackup(old).ok, true);
+  assert.equal(validateBackup({ ...b, photos: [{ id: 1 }] }).ok, false);
+});

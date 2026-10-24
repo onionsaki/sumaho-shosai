@@ -37,7 +37,7 @@ export function newBook(partial = {}) {
     workTitle: '', workKey: '',
     volume: null, volumeLabel: '',
     coverUrl: '',
-    photo: '', // a picture taken on the phone (data URL); wins over coverUrl
+    hasPhoto: false, // a picture taken on the phone lives in the photos store (db.getPhoto)
     format: 'paper',
     ownership: 'owned',
     readStatus: 'unread',
@@ -51,4 +51,4 @@ export function newBook(partial = {}) {
   return book;
 }
 
-export const coverSrc = book => book.photo || book.coverUrl || '';
+export const coverSrc = (book, photoUrl = '') => photoUrl || book.coverUrl || '';

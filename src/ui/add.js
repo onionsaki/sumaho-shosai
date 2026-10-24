@@ -34,8 +34,9 @@ export function openAdd(ctx) {
     releasedAt: opts.ownership === 'released' ? todayStr() : '',
   });
 
-  async function finish(book, { enqueue = false } = {}) {
-    const saved = await db.putBook(book);
+  async function finish(book, { enqueue = false, photo = '' } = {}) {
+    let saved = await db.putBook(book);
+    if (photo) { await db.putPhoto(saved.id, photo); saved = await db.getBook(saved.id); }
     if (enqueue) lookup.enqueue(saved.id);
     toast(`登録しました：${saved.title || saved.isbn}`);
     s.close();
@@ -145,9 +146,9 @@ export function openAdd(ctx) {
       const authors = f.authors.value.split('、').map(x => x.trim()).filter(Boolean);
       const workTitle = f.workTitle.value.trim();
       await finish(newBook({
-        title, authors, workTitle, volume, photo, ...stamp(), lookup: 'manual',
+        title, authors, workTitle, volume, ...stamp(), lookup: 'manual',
         workKey: workKeyOf(workTitle || title, authors),
-      }));
+      }), { photo });
     });
     s.setAction('登録', () => saveBtn.click());
     fill(body,

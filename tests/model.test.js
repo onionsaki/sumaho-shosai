@@ -40,8 +40,8 @@ test('labels', () => {
 
 test('a photo taken on the phone is shown before the looked-up cover', async () => {
   const { coverSrc } = await import('../src/core/model.js');
-  assert.equal(newBook().photo, '');
+  assert.equal(newBook().hasPhoto, false);
   assert.equal(coverSrc(newBook({ coverUrl: 'https://c/x.jpg' })), 'https://c/x.jpg');
-  assert.equal(coverSrc(newBook({ coverUrl: 'https://c/x.jpg', photo: 'data:image/jpeg;base64,AA' })), 'data:image/jpeg;base64,AA');
+  assert.equal(coverSrc(newBook({ coverUrl: 'https://c/x.jpg' }), 'data:image/jpeg;base64,AA'), 'data:image/jpeg;base64,AA');
   assert.equal(coverSrc(newBook()), '');
 });

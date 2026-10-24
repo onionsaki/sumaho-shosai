@@ -117,3 +117,53 @@ test('allSettings lists key/value pairs', async () => {
   const s = await db.allSettings();
   assert.ok(s.some(x => x.key === 'staleYears' && x.value === 2));
 });
+
+// Photos live in their own store so the shelf never loads them all (鬼さん 2026-10-25: thousands of books).
+test('photos are stored apart from the book and removed with it', async () => {
+  const db = await fresh();
+  const book = await db.putBook(newBook({ title: 't' }));
+  await db.putPhoto(book.id, 'data:image/jpeg;base64,AAA');
+  assert.equal(await db.getPhoto(book.id), 'data:image/jpeg;base64,AAA');
+  assert.equal((await db.getBook(book.id)).hasPhoto, true);
+  assert.ok(!('photo' in (await db.allBooks())[0]));
+  await db.deletePhoto(book.id);
+  assert.equal(await db.getPhoto(book.id), undefined);
+  assert.equal((await db.getBook(book.id)).hasPhoto, false);
+  await db.putPhoto(book.id, 'data:x');
+  await db.deleteBook(book.id);
+  assert.equal(await db.getPhoto(book.id), undefined);
+});
+
+test('opening an old database moves inline photos into the photo store', async () => {
+  const name = `old-${Date.now()}`;
+  await new Promise((resolve, reject) => {
+    const open = indexedDB.open(name, 1);
+    open.onupgradeneeded = () => {
+      const d = open.result;
+      const books = d.createObjectStore('books', { keyPath: 'id' });
+      books.createIndex('isbn', 'isbn', { unique: true });
+      books.createIndex('workKey', 'workKey');
+      books.createIndex('lookup', 'lookup');
+      d.createObjectStore('tags', { keyPath: 'id' });
+      d.createObjectStore('settings', { keyPath: 'key' });
+      books.put({ ...newBook({ title: 'with photo' }), id: 'b1', photo: 'data:old' });
+      books.put({ ...newBook({ title: 'plain' }), id: 'b2', photo: '' });
+    };
+    open.onsuccess = () => { open.result.close(); resolve(); };
+    open.onerror = () => reject(open.error);
+  });
+  const db = await openDb(name);
+  assert.equal(await db.getPhoto('b1'), 'data:old');
+  const b1 = await db.getBook('b1');
+  assert.equal(b1.hasPhoto, true);
+  assert.ok(!('photo' in b1));
+  assert.equal((await db.getBook('b2')).hasPhoto, false);
+});
+
+test('replaceAll restores photos with the books', async () => {
+  const db = await fresh();
+  const book = { ...newBook({ title: 'p' }), hasPhoto: true };
+  await db.replaceAll({ books: [book], tags: [], settings: [], photos: [{ id: book.id, data: 'data:p' }] });
+  assert.equal(await db.getPhoto(book.id), 'data:p');
+  assert.deepEqual(await db.allPhotos(), [{ id: book.id, data: 'data:p' }]);
+});

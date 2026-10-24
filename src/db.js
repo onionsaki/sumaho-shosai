@@ -1,4 +1,5 @@
-// IndexedDB store: books, tags, settings (spec §3, §6).
+// IndexedDB store: books, tags, settings, photos (spec §3, §6).
+// v2 (2026-10-25): photos moved out of the book records so loading the shelf stays light with thousands of books.
 
 import { SEED_TAGS, newId } from './core/model.js';
 import { normalizeForSearch } from './core/normalize.js';
@@ -14,7 +15,7 @@ const done = tx => new Promise((resolve, reject) => {
   tx.onabort = () => reject(tx.error);
 });
 
-function upgrade(db) {
+function createV1(db) {
   const books = db.createObjectStore('books', { keyPath: 'id' });
   books.createIndex('isbn', 'isbn', { unique: true });
   books.createIndex('workKey', 'workKey');
@@ -41,9 +42,24 @@ const stripIsbn = book => {
 };
 const cleanBook = book => ({ ...stripIsbn(book), updatedAt: new Date().toISOString() });
 
+function upgrade(db, oldVersion, tx) {
+  if (oldVersion < 1) createV1(db);
+  if (oldVersion < 2) {
+    const photos = db.createObjectStore('photos', { keyPath: 'id' });
+    tx.objectStore('books').openCursor().onsuccess = e => {
+      const cursor = e.target.result;
+      if (!cursor) return;
+      const { photo, ...book } = cursor.value;
+      if (photo) photos.put({ id: book.id, data: photo });
+      cursor.update({ ...book, hasPhoto: Boolean(photo) });
+      cursor.continue();
+    };
+  }
+}
+
 export async function openDb(name = 'sumaho-shosai') {
-  const open = indexedDB.open(name, 1);
-  open.onupgradeneeded = () => upgrade(open.result);
+  const open = indexedDB.open(name, 2);
+  open.onupgradeneeded = e => upgrade(open.result, e.oldVersion, open.transaction);
   const idb = await req(open);
 
   const store = (names, mode = 'readonly') => {
@@ -68,9 +84,30 @@ export async function openDb(name = 'sumaho-shosai') {
       return copy;
     },
     async deleteBook(id) {
-      const { tx, get } = store('books', 'readwrite');
+      const { tx, get } = store(['books', 'photos'], 'readwrite');
       get('books').delete(id);
+      get('photos').delete(id);
       await done(tx);
+    },
+    async getPhoto(id) {
+      return (await req(store('photos').get('photos').get(id)))?.data;
+    },
+    async putPhoto(id, data) {
+      const { tx, get } = store(['books', 'photos'], 'readwrite');
+      get('photos').put({ id, data });
+      const book = await req(get('books').get(id));
+      if (book) get('books').put(cleanBook({ ...book, hasPhoto: true }));
+      await done(tx);
+    },
+    async deletePhoto(id) {
+      const { tx, get } = store(['books', 'photos'], 'readwrite');
+      get('photos').delete(id);
+      const book = await req(get('books').get(id));
+      if (book) get('books').put(cleanBook({ ...book, hasPhoto: false }));
+      await done(tx);
+    },
+    async allPhotos() {
+      return req(store('photos').get('photos').getAll());
     },
     async allBooks() {
       return req(store('books').get('books').getAll());
@@ -143,14 +180,15 @@ export async function openDb(name = 'sumaho-shosai') {
       return req(store('settings').get('settings').getAll());
     },
 
-    async replaceAll({ books, tags, settings }) {
-      const { tx, get } = store(['books', 'tags', 'settings'], 'readwrite');
+    async replaceAll({ books, tags, settings, photos = [] }) {
+      const { tx, get } = store(['books', 'tags', 'settings', 'photos'], 'readwrite');
       const finished = done(tx);
       try {
-        for (const n of ['books', 'tags', 'settings']) get(n).clear();
+        for (const n of ['books', 'tags', 'settings', 'photos']) get(n).clear();
         for (const book of books) get('books').put(stripIsbn(book));
         for (const tag of tags) get('tags').put(tag);
         for (const row of settings) get('settings').put(row);
+        for (const p of photos) get('photos').put(p);
       } catch (err) {
         tx.abort(); // nothing is cleared when any row is broken
         await finished.catch(() => {});

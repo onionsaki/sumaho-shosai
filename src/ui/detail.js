@@ -61,13 +61,15 @@ export async function openDetail(bookId, ctx) {
     const shoot = async () => {
       const photo = await pickPhoto();
       if (!photo) return;
-      await save({ photo });
+      await db.putPhoto(book.id, photo);
+      book = await db.getBook(book.id);
+      changed = true;
       renderHead();
       toast('写真を表紙にしました');
     };
-    if (!book.photo) { shoot(); return; }
+    if (!book.hasPhoto) { shoot(); return; }
     const menu = sheet(h('div', { class: 'row-buttons' },
-      h('button', { class: 'btn', onClick: async () => { menu.close(); await save({ photo: '' }); renderHead(); } }, '写真を外す'),
+      h('button', { class: 'btn', onClick: async () => { menu.close(); await db.deletePhoto(book.id); book = await db.getBook(book.id); changed = true; renderHead(); } }, '写真を外す'),
       h('button', { class: 'btn primary', onClick: () => { menu.close(); shoot(); } }, '撮り直す')), { title: '表紙の写真' });
   }
 

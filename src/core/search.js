@@ -3,9 +3,23 @@
 import { normalizeForSearch } from './normalize.js';
 import { isStale } from './stale.js';
 
-const haystack = b => normalizeForSearch([
-  b.title, b.titleKana, ...(b.authors ?? []), ...(b.authorsKana ?? []), b.workTitle, b.memo,
-].join(' '));
+// Thousands of books (鬼さん 2026-10-25): normalised text is worked out once per book object and reused,
+// so typing and re-sorting do not redo NFKC/kana work. A saved book is a new object, so edits are never stale.
+const cache = new WeakMap();
+const keysOf = b => {
+  let k = cache.get(b);
+  if (!k) {
+    k = {
+      hay: normalizeForSearch([b.title, b.titleKana, ...(b.authors ?? []), ...(b.authorsKana ?? []), b.workTitle, b.memo].join(' ')),
+      title: normalizeForSearch(b.titleKana || b.title),
+      author: normalizeForSearch((b.authorsKana ?? [])[0] || (b.authors ?? [])[0] || ''),
+    };
+    cache.set(b, k);
+  }
+  return k;
+};
+const haystack = b => keysOf(b).hay;
+const collator = new Intl.Collator('ja');
 
 export function filterBooks(books, filter = {}, ctx = {}) {
   const {
@@ -36,9 +50,7 @@ export const SORTS = [
 ];
 
 const byCreated = (a, b) => (a.createdAt < b.createdAt ? -1 : a.createdAt > b.createdAt ? 1 : 0);
-const titleKey = b => normalizeForSearch(b.titleKana || b.title);
-const byTitle = (a, b) => titleKey(a).localeCompare(titleKey(b), 'ja') || (a.volume ?? -1) - (b.volume ?? -1);
-const authorKey = b => normalizeForSearch((b.authorsKana ?? [])[0] || (b.authors ?? [])[0] || '');
+const byTitle = (a, b) => collator.compare(keysOf(a).title, keysOf(b).title) || (a.volume ?? -1) - (b.volume ?? -1);
 // Books with no release date go last in both directions.
 const byIssued = dir => (a, b) => {
   if (!a.issued || !b.issued) return (a.issued ? -1 : 0) + (b.issued ? 1 : 0) || byTitle(a, b);
@@ -50,7 +62,7 @@ export function sortBooks(books, order = 'kana') {
   switch (order) {
     case 'recent': return copy.sort((a, b) => byCreated(b, a));
     case 'oldest': return copy.sort(byCreated);
-    case 'author': return copy.sort((a, b) => authorKey(a).localeCompare(authorKey(b), 'ja') || byTitle(a, b));
+    case 'author': return copy.sort((a, b) => collator.compare(keysOf(a).author, keysOf(b).author) || byTitle(a, b));
     case 'issuedNew': return copy.sort(byIssued(-1));
     case 'issuedOld': return copy.sort(byIssued(1));
     default: return copy.sort(byTitle);
