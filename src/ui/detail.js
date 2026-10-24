@@ -7,6 +7,7 @@ import { toIsbn13 } from '../core/isbn.js';
 import { workKeyOf } from '../core/volume.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { icon } from './icons.js';
+import { pickPhoto } from './photo.js';
 
 const OWNERSHIP_OPTIONS = Object.entries(LABELS.ownership);
 const READ_OPTIONS = [['unread', 'まだ'], ['reading', '読書中'], ['read', '読んだ']];
@@ -45,13 +46,29 @@ export async function openDetail(bookId, ctx) {
     ].filter(Boolean);
     const status = book.lookup === 'pending' ? '本の情報を取得中です' : book.lookup === 'not_found' ? '本の情報が見つかりませんでした。「情報を直す」で入力できます' : '';
     fill(head, h('div', { class: 'detail-head' },
-      coverEl(book, true),
+      h('button', { class: 'cover-wrap', 'aria-label': '写真を撮って表紙にする', onClick: takePhoto },
+        coverEl(book, true), h('span', { class: 'cam' }, icon('camera'))),
       h('div', {},
         h('div', { class: 'title' }, displayTitle(book)),
         h('div', {}, (book.authors ?? []).join('、')),
         ...kv.map(t => h('div', { class: 'kv' }, t)),
         book.format === 'ebook' ? h('span', { class: 'badge ebook' }, '電子') : null,
         status ? h('div', { class: 'small', style: { color: 'var(--warn)', marginTop: '4px' } }, status) : null)));
+  }
+
+  // Tap the cover to use a photo of the book itself (no barcode, no cover found, or a record before giving it away).
+  async function takePhoto() {
+    const shoot = async () => {
+      const photo = await pickPhoto();
+      if (!photo) return;
+      await save({ photo });
+      renderHead();
+      toast('写真を表紙にしました');
+    };
+    if (!book.photo) { shoot(); return; }
+    const menu = sheet(h('div', { class: 'row-buttons' },
+      h('button', { class: 'btn', onClick: async () => { menu.close(); await save({ photo: '' }); renderHead(); } }, '写真を外す'),
+      h('button', { class: 'btn primary', onClick: () => { menu.close(); shoot(); } }, '撮り直す')), { title: '表紙の写真' });
   }
 
   const tagRow = h('div', { class: 'chips' });
@@ -165,6 +182,7 @@ export async function openDetail(bookId, ctx) {
         render();
       } }, '保存する'));
     const editSheet = sheet(form, { title: '情報を直す' });
+    editSheet.setAction('保存', () => form.querySelector('.btn.primary').click());
   }
 
   async function addNextVolume() {

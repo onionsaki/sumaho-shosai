@@ -84,3 +84,24 @@ test('ownedPriceSum and countOwned', () => {
   assert.equal(ownedPriceSum(books), 2100);
   assert.equal(countOwned(books), 3);
 });
+
+test('oldest sort is registration date ascending', () => {
+  const older = newBook({ title: 'z', createdAt: '2026-01-01T00:00:00.000Z' });
+  const newer = newBook({ title: 'b', createdAt: '2026-02-01T00:00:00.000Z' });
+  assert.deepEqual(sortBooks([newer, older], 'oldest'), [older, newer]);
+});
+
+test('author sort uses the author reading, then the title', () => {
+  const b1 = newBook({ title: 'い', authors: ['渡邉康弘'], authorsKana: ['ワタナベ ヤスヒロ'] });
+  const b2 = newBook({ title: 'う', authors: ['齋藤孝'], authorsKana: ['サイトウ タカシ'] });
+  const b3 = newBook({ title: 'あ', authors: ['渡邉康弘'], authorsKana: ['ワタナベ ヤスヒロ'] });
+  assert.deepEqual(sortBooks([b1, b2, b3], 'author'), [b2, b3, b1]);
+});
+
+test('issued sorts put newer or older release first and unknown dates last', () => {
+  const a = newBook({ title: 'a', issued: '2016-06' });
+  const b = newBook({ title: '0', issued: '2020-01' });
+  const none = newBook({ title: 'c', issued: '' });
+  assert.deepEqual(sortBooks([a, none, b], 'issuedNew'), [b, a, none]);
+  assert.deepEqual(sortBooks([b, none, a], 'issuedOld'), [a, b, none]);
+});

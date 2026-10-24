@@ -37,6 +37,7 @@ export function newBook(partial = {}) {
     workTitle: '', workKey: '',
     volume: null, volumeLabel: '',
     coverUrl: '',
+    photo: '', // a picture taken on the phone (data URL); wins over coverUrl
     format: 'paper',
     ownership: 'owned',
     readStatus: 'unread',
@@ -49,3 +50,5 @@ export function newBook(partial = {}) {
   if (!book.isbn) delete book.isbn;
   return book;
 }
+
+export const coverSrc = book => book.photo || book.coverUrl || '';

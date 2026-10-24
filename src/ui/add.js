@@ -6,6 +6,8 @@ import { toIsbn13 } from '../core/isbn.js';
 import { workKeyOf } from '../core/volume.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { OfflineError } from '../lookup.js';
+import { icon } from './icons.js';
+import { pickPhoto } from './photo.js';
 
 const READ_OPTIONS = [['unread', 'まだ'], ['reading', '読書中'], ['read', '読んだ']];
 
@@ -51,6 +53,7 @@ export function openAdd(ctx) {
   }
 
   function showSearch() {
+    s.setAction(null);
     const title = h('input', { type: 'search', placeholder: '書名（一部でよい）', enterkeyhint: 'search' });
     const author = h('input', { type: 'text', placeholder: '著者（わかれば）' });
     const status = h('p', { class: 'muted small' });
@@ -96,18 +99,18 @@ export function openAdd(ctx) {
   function showIsbn() {
     const input = h('input', { type: 'text', inputmode: 'numeric', placeholder: '978… または 10桁' });
     const status = h('p', { class: 'small muted' });
-    fill(body, 
-      h('label', { class: 'field' }, h('span', {}, 'ISBN（ハイフンがあってもよい）'), input),
-      options(),
-      h('button', { class: 'btn primary wide', style: { marginTop: '14px' }, onClick: async () => {
+    const go = h('button', { class: 'btn primary wide', style: { marginTop: '14px' }, onClick: async () => {
         const isbn = toIsbn13(input.value);
         if (!isbn) { status.textContent = 'ISBNの数字が正しくありません'; return; }
         if (await openExisting(isbn)) return;
         status.textContent = '本の情報を調べています…';
         const info = await lookup.fetchInfo(isbn);
         await finish(newBook({ ...(info ?? {}), isbn, ...stamp(), lookup: info ? 'ok' : 'pending' }), { enqueue: !info });
-      } }, '登録する'),
-      status);
+      } }, '登録する');
+    s.setAction('登録', () => go.click());
+    fill(body,
+      h('label', { class: 'field' }, h('span', {}, 'ISBN（ハイフンがあってもよい）'), input),
+      options(), go, status);
   }
 
   function showManual() {
@@ -118,6 +121,11 @@ export function openAdd(ctx) {
     };
     const warn = h('p', { class: 'small', style: { color: 'var(--warn)' } });
     let confirmed = false;
+    let photo = '';
+    const frame = h('button', { class: 'photo-frame', 'aria-label': '写真を撮って表紙にする' });
+    const drawFrame = () => fill(frame, photo ? h('img', { src: photo, alt: '' }) : [icon('camera'), h('span', {}, '写真を撮る')]);
+    drawFrame();
+    frame.addEventListener('click', async () => { const p = await pickPhoto(); if (p) { photo = p; drawFrame(); } });
     const saveBtn = h('button', { class: 'btn primary wide', style: { marginTop: '14px' } }, '登録する');
     saveBtn.addEventListener('click', async () => {
       const title = f.title.value.trim();
@@ -137,11 +145,13 @@ export function openAdd(ctx) {
       const authors = f.authors.value.split('、').map(x => x.trim()).filter(Boolean);
       const workTitle = f.workTitle.value.trim();
       await finish(newBook({
-        title, authors, workTitle, volume, ...stamp(), lookup: 'manual',
+        title, authors, workTitle, volume, photo, ...stamp(), lookup: 'manual',
         workKey: workKeyOf(workTitle || title, authors),
       }));
     });
-    fill(body, 
+    s.setAction('登録', () => saveBtn.click());
+    fill(body,
+      frame,
       field('書名（必須）', 'title'),
       field('著者（複数なら「、」で区切る）', 'authors'),
       h('div', { class: 'field-row' }, field('作品名（続き物なら）', 'workTitle'), field('巻', 'volume', { inputmode: 'numeric' })),

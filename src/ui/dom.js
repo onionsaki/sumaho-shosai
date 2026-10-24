@@ -40,12 +40,15 @@ export function toast(message, { action, ms = 3500 } = {}) {
 export function sheet(content, { title = '' } = {}) {
   const root = document.getElementById('sheets');
   const backdrop = h('div', { class: 'sheet-backdrop' });
+  const actionSlot = h('span', { class: 'sheet-action' });
   const panel = h('section', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
     h('header', { class: 'sheet-head' },
       h('button', { class: 'round-btn', 'aria-label': '閉じる', onClick: () => close() }, icon('close')),
       h('h2', {}, title),
-      h('span')),
+      actionSlot),
     h('div', { class: 'sheet-body' }, content));
+  // A button at the top right (Yomoo-style 登録), so a long form needs no scrolling to save.
+  const setAction = (label, onClick) => fill(actionSlot, label ? h('button', { class: 'head-action', onClick }, label) : null);
   const listeners = new Set();
   function close() {
     backdrop.remove();
@@ -54,7 +57,7 @@ export function sheet(content, { title = '' } = {}) {
   }
   backdrop.addEventListener('click', close);
   root.append(backdrop, panel);
-  return { close, onClose: cb => listeners.add(cb), body: panel.querySelector('.sheet-body') };
+  return { close, onClose: cb => listeners.add(cb), body: panel.querySelector('.sheet-body'), setAction };
 }
 
 export function confirmDialog(message, okLabel = 'OK') {

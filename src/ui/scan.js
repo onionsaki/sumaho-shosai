@@ -136,6 +136,10 @@ export function mount(container, ctx) {
     const render = () => {
       count.textContent = `今回 ${entries.filter(e => e.action === 'created').length}冊`;
       undoBtn.disabled = !entries.length;
+      if (!entries.length) {
+        fill(log, h('li', { class: 'scan-hint' }, icon('barcode'), h('p', {}, 'バーコードは連続で読み取れます'), h('p', { class: 'small muted' }, '本の裏のバーコードを、白い枠に合わせてください')));
+        return;
+      }
       fill(log, ...entries.slice(0, 5).map(e => {
         const [cls, label] = stateOf(e);
         return h('li', {}, h('span', { class: `state ${cls}` }, label), h('span', {}, e.title || e.isbn));
@@ -188,11 +192,11 @@ export function mount(container, ctx) {
       h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })),
       h('div', { class: 'muted small', style: { marginTop: '6px' } },
         `${LABELS.ownership[session.ownership]}・${LABELS.read[session.readStatus]}${tagNames.length ? `・${tagNames.join('、')}` : ''}`),
-      statusEl,
       count,
       h('div', { class: 'row-buttons' }, undoBtn, h('button', { class: 'btn primary', onClick: finish }, '終える')),
       manualEntry('登録', handle),
       log,
+      statusEl,
     );
     render();
     start(video, handle, statusEl).then(ok => { if (!ok) statusEl.textContent = 'カメラを使えません。下の欄に番号を打って登録できます'; });

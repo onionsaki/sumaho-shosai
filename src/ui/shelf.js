@@ -1,15 +1,15 @@
 // 本棚 tab: search, filters, book and work views (spec §4-3).
 
-import { h, fill, downloadText } from './dom.js';
+import { h, fill, downloadText, sheet, segmented } from './dom.js';
 import { openTagPicker as pickTags } from './tags.js';
 import { icon } from './icons.js';
-import { filterBooks, sortBooks } from '../core/search.js';
+import { filterBooks, sortBooks, SORTS } from '../core/search.js';
 import { isStale } from '../core/stale.js';
 import { groupWorks } from '../core/series.js';
 import { booksToCsv, csvFileName } from '../core/csv.js';
 import { shouldRemindBackup } from '../core/backup.js';
 import { normalizeForSearch } from '../core/normalize.js';
-import { LABELS, todayStr } from '../core/model.js';
+import { LABELS, todayStr, coverSrc } from '../core/model.js';
 
 const PAGE = 200;
 
@@ -21,8 +21,8 @@ const state = {
 
 export function coverEl(book, big = false) {
   const placeholder = () => h('div', { class: big ? 'cover big' : 'cover' }, (book.title || book.isbn || '？').slice(0, 8));
-  if (!book.coverUrl) return placeholder();
-  const img = h('img', { class: big ? 'cover big' : 'cover', src: book.coverUrl, alt: '', loading: 'lazy' });
+  if (!coverSrc(book)) return placeholder();
+  const img = h('img', { class: big ? 'cover big' : 'cover', src: coverSrc(book), alt: '', loading: 'lazy' });
   img.addEventListener('error', () => img.replaceWith(placeholder()));
   return img;
 }
@@ -46,7 +46,8 @@ export function mount(container, ctx) {
 
   const search = h('input', { type: 'search', placeholder: '書名・著者・読み・メモで探す', value: state.query, enterkeyhint: 'search' });
   const banners = h('div');
-  const filters = h('div', { class: 'filters' });
+  const filters = h('div', { class: 'status-row' });
+  const active = h('div', { class: 'chips active-filters' });
   const toolbar = h('div', { class: 'toolbar' });
   const list = h('ul', { class: 'book-list' });
   const more = h('div', { class: 'more' });
@@ -60,32 +61,70 @@ export function mount(container, ctx) {
 
   const ctxFor = () => ({ examTagId: settings.examTagId, staleYears: settings.staleYears, today: todayStr() });
   const toggle = (arr, v) => (arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);
-  const anyFilter = () => state.ownership.length || state.readStatus.length || state.tagIds.length || state.staleOnly || state.needsReviewOnly;
 
+  // Yomoo-style: big status buttons with counts (one at a time); everything else lives in the 絞り込み sheet.
   function renderFilters() {
-    const chip = (label, on, onClick) => h('button', { class: on ? 'chip on' : 'chip', onClick }, label);
-    const reviewCount = books.filter(b => b.lookup === 'not_found').length;
-    const tagLabel = state.tagIds.length
-      ? state.tagIds.map(id => tags.find(t => t.id === id)?.name).filter(Boolean).join('・')
-      : 'タグ';
-    fill(filters, 
-      ...Object.entries(LABELS.ownership).map(([v, label]) => chip(label, state.ownership.includes(v), () => { state.ownership = toggle(state.ownership, v); render(); })),
-      ...Object.entries(LABELS.read).map(([v, label]) => chip(label, state.readStatus.includes(v), () => { state.readStatus = toggle(state.readStatus, v); render(); })),
-      chip(`${tagLabel} ▾`, state.tagIds.length > 0, openTagPicker),
-      chip('古いかも', state.staleOnly, () => { state.staleOnly = !state.staleOnly; render(); }),
-      reviewCount ? chip(`あとで確認 ${reviewCount}`, state.needsReviewOnly, () => { state.needsReviewOnly = !state.needsReviewOnly; render(); }) : null,
-      anyFilter() ? chip('条件を外す', false, () => {
-        Object.assign(state, { ownership: [], readStatus: [], tagIds: [], staleOnly: false, needsReviewOnly: false });
-        render();
-      }) : null,
-    );
+    fill(filters, ...Object.entries(LABELS.ownership).map(([v, label]) => {
+      const n = books.filter(b => b.ownership === v).length;
+      const on = state.ownership.length === 1 && state.ownership[0] === v;
+      return h('button', { class: on ? 'status-btn on' : 'status-btn', onClick: () => { state.ownership = on ? [] : [v]; render(); } },
+        label, h('span', { class: 'n' }, String(n)));
+    }));
   }
 
-  function openTagPicker() {
-    pickTags({
-      title: 'タグで絞り込む', tags, selected: state.tagIds, note: '選んだタグが全部付いている本を出します。',
-      onToggle: id => { state.tagIds = toggle(state.tagIds, id); render(); },
-    });
+  // What is narrowing the list right now, each removable on its own.
+  function renderActive() {
+    const chip = (label, onRemove) => h('button', { class: 'chip on', onClick: () => { onRemove(); render(); } }, `${label} ×`);
+    const items = [
+      ...state.readStatus.map(v => chip(LABELS.read[v], () => { state.readStatus = state.readStatus.filter(x => x !== v); })),
+      ...state.tagIds.map(id => tags.find(t => t.id === id)).filter(Boolean)
+        .map(t => chip(t.name, () => { state.tagIds = state.tagIds.filter(x => x !== t.id); })),
+      state.staleOnly ? chip('古いかも', () => { state.staleOnly = false; }) : null,
+      state.needsReviewOnly ? chip('あとで確認', () => { state.needsReviewOnly = false; }) : null,
+    ].filter(Boolean);
+    fill(active, ...items);
+    active.hidden = !items.length;
+  }
+
+  function openFilterSheet() {
+    const body = h('div');
+    const s = sheet(body, { title: '絞り込み' });
+    const draw = () => {
+      const chip = (label, on, onClick) => h('button', { class: on ? 'chip on' : 'chip', onClick: () => { onClick(); render(); draw(); } }, label);
+      const reviewCount = books.filter(b => b.lookup === 'not_found').length;
+      const tagNames = state.tagIds.map(id => tags.find(t => t.id === id)?.name).filter(Boolean);
+      fill(body,
+        h('div', { class: 'section-title', style: { marginTop: '4px' } }, '読んだか'),
+        h('div', { class: 'chips' }, Object.entries(LABELS.read).map(([v, label]) =>
+          chip(label, state.readStatus.includes(v), () => { state.readStatus = toggle(state.readStatus, v); }))),
+        h('div', { class: 'section-title' }, 'タグ（選んだものが全部付いている本）'),
+        h('div', { class: 'chips' },
+          ...tagNames.map(n => h('span', { class: 'chip on' }, n)),
+          h('button', { class: 'chip ghost', onClick: () => pickTags({
+            title: 'タグで絞り込む', tags, selected: state.tagIds,
+            onToggle: id => { state.tagIds = toggle(state.tagIds, id); render(); draw(); },
+          }) }, tagNames.length ? '変更' : `タグを選ぶ（全${tags.length}個）`)),
+        h('div', { class: 'section-title' }, 'その他'),
+        h('div', { class: 'chips' },
+          chip('古いかも', state.staleOnly, () => { state.staleOnly = !state.staleOnly; }),
+          reviewCount ? chip(`あとで確認 ${reviewCount}`, state.needsReviewOnly, () => { state.needsReviewOnly = !state.needsReviewOnly; }) : null),
+        h('div', { class: 'section-title' }, '表示'),
+        segmented([['books', '1冊ずつ'], ['works', '作品でまとめる']], state.view, v => { state.view = v; render(); }),
+        h('div', { class: 'row-buttons', style: { marginTop: '22px' } },
+          h('button', { class: 'btn', onClick: () => {
+            Object.assign(state, { ownership: [], readStatus: [], tagIds: [], staleOnly: false, needsReviewOnly: false });
+            render(); draw();
+          } }, '条件を外す'),
+          h('button', { class: 'btn', onClick: () => downloadText(csvFileName(todayStr()), booksToCsv(currentBooks, tags), 'text/csv') }, 'この一覧をCSVに')),
+        h('button', { class: 'btn primary wide', style: { marginTop: '12px' }, onClick: () => s.close() }, `${currentBooks.length}冊を見る`));
+    };
+    draw();
+  }
+
+  function openSortSheet() {
+    const s = sheet(h('ul', { class: 'pick-list' }, SORTS.map(([v, label]) => h('li', {},
+      h('button', { onClick: () => { state.order = v; render(); s.close(); } },
+        h('span', {}, label), v === state.order ? icon('check') : null)))), { title: '並び替え' });
   }
 
   function renderBanners() {
@@ -138,6 +177,7 @@ export function mount(container, ctx) {
   }
 
   let currentRows = [];
+  let currentBooks = [];
   function renderList() {
     if (!currentRows.length) {
       fill(list, h('li', { class: 'empty' }, icon('books'), h('p', {}, books.length ? 'この条件の本はありません' : '本棚は空です'),
@@ -152,17 +192,13 @@ export function mount(container, ctx) {
   function render() {
     if (disposed) return;
     const filtered = sortBooks(filterBooks(books, state, ctxFor()), state.order);
+    currentBooks = filtered;
     currentRows = rows(filtered);
     renderFilters();
-    fill(toolbar, 
-      h('span', { class: 'count' }, `${filtered.length}冊`),
-      h('div', { class: 'row-buttons', style: { flex: '0 0 auto' } },
-        h('button', { class: 'chip', onClick: () => { state.view = state.view === 'books' ? 'works' : 'books'; render(); } },
-          state.view === 'books' ? '作品でまとめる' : '1冊ずつ'),
-        h('button', { class: 'chip', onClick: () => { state.order = state.order === 'kana' ? 'recent' : 'kana'; render(); } },
-          state.order === 'kana' ? '五十音順' : '新しい順'),
-        h('button', { class: 'chip', onClick: () => downloadText(csvFileName(todayStr()), booksToCsv(filtered, tags), 'text/csv') }, 'CSV')),
-    );
+    renderActive();
+    const orderLabel = SORTS.find(([v]) => v === state.order)?.[1] ?? '';
+    fill(toolbar,
+      h('span', { class: 'count' }, `${filtered.length}冊・${orderLabel}${state.view === 'works' ? '・作品でまとめ中' : ''}`));
     renderList();
   }
 
@@ -189,7 +225,11 @@ export function mount(container, ctx) {
     reloadTimer = setTimeout(load, 500);
   });
 
-  container.append(h('div', { class: 'search-row with-icon' }, icon('search'), search), banners, filters, toolbar, list, more, fab);
+  const filterBtn = h('button', { class: 'round-btn', 'aria-label': '絞り込み', onClick: openFilterSheet }, icon('filter'));
+  const sortBtn = h('button', { class: 'round-btn', 'aria-label': '並び替え', onClick: openSortSheet }, icon('sort'));
+  container.append(
+    h('div', { class: 'shelf-top' }, h('div', { class: 'search-row with-icon' }, icon('search'), search), filterBtn, sortBtn),
+    banners, filters, active, toolbar, list, more, fab);
   load();
 
   return () => {
