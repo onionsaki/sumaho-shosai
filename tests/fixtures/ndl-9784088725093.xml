@@ -1,0 +1,229 @@
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:dcndl="http://ndl.go.jp/dcndl/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" version="2.0">
+  <channel>
+    <title>9784088725093 - 国立国会図書館サーチ OpenSearch</title>
+    <link>https://ios-v2-prod-eks-alb.ndlsearch.ndl.go.jp/api/opensearch?isbn=9784088725093</link>
+    <description>Search results for isbn=9784088725093</description>
+    <language>ja</language>
+    <openSearch:totalResults>4</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>200</openSearch:itemsPerPage>
+    <item>
+      <title>ONE PIECE</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000128-IB16163212</link>
+      <description><![CDATA[<p>巻一,集英社,1997,4-08-872509-3<p><ul><li>タイトル：ONE PIECE</li><li>タイトル（読み）：ワン ピース</li><li>責任表示：尾田栄一郎∥著</li><li>シリーズ名：ジャンプ・コミックス</li><li>シリーズ名（読み）：ジャンプ コミックス</li></ul>]]></description>
+      <author>尾田/栄一郎,尾田栄一郎∥著</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000128-IB16163212</guid>
+      <pubDate>Fri, 10 Oct 2025 11:46:16 +0900</pubDate>
+      <dc:title>ONE PIECE</dc:title>
+      <dcndl:titleTranscription>ワン ピース</dcndl:titleTranscription>
+      <dc:creator>尾田/栄一郎</dc:creator>
+      <dcndl:creatorTranscription>オダ エイイチロウ</dcndl:creatorTranscription>
+      <dcndl:volume>巻一</dcndl:volume>
+      <dcndl:seriesTitle>ジャンプ・コミックス</dcndl:seriesTitle>
+      <dcndl:seriesTitleTranscription>ジャンプ コミックス</dcndl:seriesTitleTranscription>
+      <dc:publisher>集英社</dc:publisher>
+      <dcndl:publicationPlace>JA</dcndl:publicationPlace>
+      <dc:date xsi:type="dcterms:W3CDTF">1997</dc:date>
+      <dcterms:issued>1997.12</dcterms:issued>
+      <dcndl:price>410円</dcndl:price>
+      <dc:extent>207p ; 18cm</dc:extent>
+      <dc:identifier xsi:type="dcndl:ISBN">4-08-872509-3</dc:identifier>
+      <dc:identifier xsi:type="dcndl:ISBN13">4-08-872509-3</dc:identifier>
+      <rdfs:seeAlso rdf:resource="https://www.library.pref.osaka.jp/bibj/?B16163212"/>
+      <dc:description> 1997</dc:description>
+    </item>
+    <item>
+      <title>Ｏｎｅ　Ｐｉｅｃｅ</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000001-I14211199005747</link>
+      <description><![CDATA[<p>巻一,集英社,1997,4088725093<p><ul><li>タイトル：Ｏｎｅ　Ｐｉｅｃｅ</li><li>タイトル（読み）：ワン　ピース</li><li>責任表示：尾田栄一郎 著</li><li>シリーズ名：ジャンプ・コミックス</li><li>シリーズ名（読み）：ジャンプ　コミックス</li><li>NDC(10)：726.1</li></ul>]]></description>
+      <author>尾田, 栄一郎,尾田栄一郎 著</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000001-I14211199005747</guid>
+      <pubDate>Mon, 17 Aug 2026 09:05:33 +0900</pubDate>
+      <dc:title>Ｏｎｅ　Ｐｉｅｃｅ</dc:title>
+      <dcndl:titleTranscription>ワン　ピース</dcndl:titleTranscription>
+      <dc:creator>尾田, 栄一郎</dc:creator>
+      <dcndl:creatorTranscription>オダ, エイイチロウ</dcndl:creatorTranscription>
+      <dcndl:volume>巻一</dcndl:volume>
+      <dcndl:seriesTitle>ジャンプ・コミックス</dcndl:seriesTitle>
+      <dcndl:seriesTitleTranscription>ジャンプ　コミックス</dcndl:seriesTitleTranscription>
+      <dc:publisher>集英社</dc:publisher>
+      <dc:date xsi:type="dcterms:W3CDTF">1997</dc:date>
+      <dcterms:issued>１９９７．１２</dcterms:issued>
+      <dcndl:price>３９０円</dcndl:price>
+      <dc:extent>２０７ｐ ; １８ｃｍ</dc:extent>
+      <dc:identifier xsi:type="dcndl:ISBN">4088725093</dc:identifier>
+      <dc:subject xsi:type="dcndl:NDC10">726.1</dc:subject>
+      <dc:subject xsi:type="dcndl:NDC8">726.1</dc:subject>
+      <rdfs:seeAlso rdf:resource="https://opac.lib.city.yokohama.lg.jp/winj/opac/switch-detail-iccap.do?bibid=1199005747"/>
+      <dc:description> 1997</dc:description>
+    </item>
+    <item>
+      <title>One piece = ワンピース</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000136-I1970304959821795629</link>
+      <description><![CDATA[<p>巻1,集英社,1997,4088725093<p><ul><li>タイトル：One piece = ワンピース</li><li>タイトル（読み）：One piece = ワンピース</li><li>責任表示：尾田栄一郎著</li><li>NDC(9)：726.1</li></ul>]]></description>
+      <author>尾田, 栄一郎,尾田栄一郎著</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000136-I1970304959821795629</guid>
+      <pubDate>Fri, 25 Sep 2026 11:13:32 +0900</pubDate>
+      <dc:title>One piece = ワンピース</dc:title>
+      <dcndl:titleTranscription>One piece = ワンピース</dcndl:titleTranscription>
+      <dc:creator>尾田, 栄一郎</dc:creator>
+      <dcndl:creatorTranscription>オダ, エイイチロウ</dcndl:creatorTranscription>
+      <dcndl:volume>巻1</dcndl:volume>
+      <dc:publisher>集英社</dc:publisher>
+      <dcndl:publicationPlace>JP</dcndl:publicationPlace>
+      <dc:date xsi:type="dcterms:W3CDTF">1997</dc:date>
+      <dcterms:issued>1997</dcterms:issued>
+      <dc:identifier xsi:type="dcndl:ISBN">4088725093</dc:identifier>
+      <dc:identifier xsi:type="dcndl:NIIBibID">BA47599030</dc:identifier>
+      <dc:subject xsi:type="dcndl:NDC9">726.1</dc:subject>
+      <dc:description>巻1:Romance dawn : 冒険の夜明け 巻2:"Versus!!バギー海賊団 巻3:偽れぬもの 巻4:三日月 巻5:誰が為に鐘は鳴る 巻6:誓い 巻7:クソジジイ 巻8:死なねエよ 巻9:涙 巻10:OK, let's stand up! 巻11:東一番の悪 巻12:伝説は始まった 巻13:大丈夫!!! 巻14:本能 巻15:まっすぐ!!! 巻16:受け継がれる意志 巻17:ヒルルクの桜 巻18:エース登場 巻19:反乱 巻20:決戦はアルバーナ</dc:description>
+      <dc:description>巻21:理想郷 巻22:Hope!! 巻23:ビビの冒険 巻24:人の夢 巻25:一億の男 巻26:神の島の冒険 巻27:序曲 (オーバーチュア) 巻28:「戦鬼」ワイパー 巻29:聖譚曲 (オラトリオ) 巻30:狂想曲 (カプリッチオ) 巻31:ここにいる 巻32:島の歌声 (ラブ・ソング) 巻33:Davy back fight!! (デービーバックファイト) 巻34:「水の都」ウォーターセブン 巻35:船長 (キャプテン) 巻36:9番目の正義 巻37:トムさん 巻38:ロケットマン 巻39:争奪戦 巻40:ギア</dc:description>
+      <dc:description>巻41:宣戦布告 巻42:海賊vsCP9 巻43:英雄伝説 巻44:帰ろう 巻45:心中お察しする 巻46:ゴースト島 (アイランド) の冒険 巻47:くもり時々ホネ 巻 48:オーズの冒険 巻49:ナイトメア・ルフィ 巻50:再び辿りつく 巻51:11人の超新星 巻52:ロジャーとレイリー 巻53:王の資質 巻54:もう誰にも止められない 巻55:地獄に仏(オカマ) 巻56:ありがとう 巻57:頂上決戦 巻58:この時代の名を"白ひげ"と呼ぶ 巻59:ポートガス・D・エース死す 巻60:弟よ</dc:description>
+      <dc:description>第61:Romance dawn for the new world - 新しい世界への冒険の夜明け 巻62:魚人島の冒険 巻63:オトヒメとタイガー 巻64:10万vs.10 巻65:ゼロに 巻66: タイヨウへと続く道 巻67:Cool fight 巻68:海賊同盟 巻69:SAD 巻70:ドフラミンゴ現る 巻71:曲者達のコロシアム 巻72:ドレスローザの忘れ物 巻73:ドレスローザSOP作戦 巻74:いつでもキミのそばにいる 巻75:おれの恩返し 巻76:構わず進め 巻77:スマイル 巻78:悪のカリスマ 巻79:LUCY!! 巻80:"開幕宣言"</dc:description>
+      <dc:description>巻81:"ネコマムシの旦那に会いに行こう" 巻82:"ざわつく世界" 巻83:"海賊「四皇」シャーロット・リンリン" 巻84:ルフィvs.(バーサス)サンジ 巻85:"ウソつき"巻86:四皇帝暗殺作戦 巻87:"甘くない" 巻88:"獅子" 巻89:"Badend musical" 巻90:"聖地マリージョア" 巻91:"侍の国の冒険" 巻92:"花魁小紫登場" 巻93:"えびす町の人気者" 巻94:"兵 (つわもの) どもが夢" 巻95:"おでんの冒険" 巻96:"煮えてなんぼのおでんに候" 巻97:"僕の聖書"</dc:description>
+      <rdfs:seeAlso rdf:resource="https://cir.nii.ac.jp/crid/1970304959821795629"/>
+      <dc:description> 1997</dc:description>
+    </item>
+    <item>
+      <title>One piece</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000002-I000002634563</link>
+      <description><![CDATA[<p>巻1,集英社,1997,4-08-872509-3<p><ul><li>タイトル：One piece</li><li>タイトル（読み）：One piece</li><li>責任表示：尾田栄一郎 著</li><li>シリーズ名：ジャンプ・コミックス</li><li>シリーズ名（読み）：ジャンプ コミックス</li><li>NDC(9)：726.1</li></ul>]]></description>
+      <author>尾田, 栄一郎, 1975-,尾田栄一郎 著</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000002-I000002634563</guid>
+      <pubDate>Tue, 22 Mar 2022 18:17:58 +0900</pubDate>
+      <dc:title>One piece</dc:title>
+      <dcndl:titleTranscription>One piece</dcndl:titleTranscription>
+      <dc:creator>尾田, 栄一郎, 1975-</dc:creator>
+      <dcndl:creatorTranscription>オダ, エイイチロウ, 1975-</dcndl:creatorTranscription>
+      <dcndl:volume>巻1</dcndl:volume>
+      <dcndl:seriesTitle>ジャンプ・コミックス</dcndl:seriesTitle>
+      <dcndl:seriesTitleTranscription>ジャンプ コミックス</dcndl:seriesTitleTranscription>
+      <dc:publisher>集英社</dc:publisher>
+      <dcndl:publicationPlace>JP</dcndl:publicationPlace>
+      <dc:date xsi:type="dcterms:W3CDTF">1997</dc:date>
+      <dcterms:issued>1997.12</dcterms:issued>
+      <dcndl:price>390円</dcndl:price>
+      <dc:extent>207p</dc:extent>
+      <dc:identifier xsi:type="dcndl:ISBN">4-08-872509-3</dc:identifier>
+      <dc:identifier xsi:type="dcndl:ISBN13">4-08-872509-3</dc:identifier>
+      <dc:identifier xsi:type="dcndl:NDLBibID">000002634563</dc:identifier>
+      <dc:identifier xsi:type="dcndl:JPNO">98070114</dc:identifier>
+      <dcndl:genre>漫画</dcndl:genre>
+      <dcndl:genreTranscription>マンガ</dcndl:genreTranscription>
+      <dc:subject xsi:type="dcndl:NDC9">726.1</dc:subject>
+      <rdfs:seeAlso rdf:resource="https://www1.library.pref.gunma.jp/winj/opac/switch-detail-iccap.do?bibid=1101674227"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.sagamihara.kanagawa.jp/TOSHOW/asp/WwShousaiKen.aspx?FCode=971555"/>
+      <rdfs:seeAlso rdf:resource="https://www.toshokan.city.shizuoka.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1001101986936"/>
+      <rdfs:seeAlso rdf:resource="https://www.oml.city.osaka.lg.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000000802660"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib-sakai.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000001153576"/>
+      <rdfs:seeAlso rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I000002634563"/>
+      <rdfs:seeAlso rdf:resource="https://dl.ndl.go.jp/pid/14245148"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461232"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461233"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461234"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461235"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461236"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461237"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461238"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461239"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461240"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461241"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461242"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461243"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461244"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461245"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461246"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461247"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461248"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461249"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461250"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461251"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461252"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461253"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461254"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461255"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461256"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461257"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461258"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461259"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461260"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461261"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461262"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461263"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461264"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461265"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461266"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461267"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461268"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461269"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461270"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461271"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461272"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461273"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461274"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461275"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461276"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461277"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461278"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461279"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461280"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461281"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461282"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461283"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461284"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461285"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461286"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461287"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461288"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461289"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461290"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461291"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461292"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461293"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461294"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461295"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461296"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461297"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461298"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/461299"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/569194"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/570428"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/574662"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/574682"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/580120"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/581312"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/584066"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/584067"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/586243"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/587679"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/589951"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/591410"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/595319"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/597167"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/598956"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/601074"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/606042"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/607908"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/609405"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/615744"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/616446"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/617968"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/619906"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/623466"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/626023"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/630092"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/632821"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/638756"/>
+      <rdfs:seeAlso rdf:resource="https://ts-opac.baika.ac.jp/opac/volume/643005"/>
+      <dc:description> 1997</dc:description>
+    </item>
+  </channel>
+</rss>

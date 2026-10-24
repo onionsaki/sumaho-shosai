@@ -14,5 +14,7 @@ export function stripAuthorRole(name) {
 }
 
 export function cleanNdlName(raw) {
-  return String(raw ?? '').replace(/,\s*|\//g, '').trim();
+  return String(raw ?? '')
+    .replace(/,?\s*\d{4}-(?:\d{4})?\s*$/, '')
+    .replace(/[,/\s　]/g, '');
 }

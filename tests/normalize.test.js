@@ -25,3 +25,11 @@ test('cleanNdlName', () => {
   assert.equal(cleanNdlName('尾田/栄一郎'), '尾田栄一郎');
   assert.equal(cleanNdlName('ワタナベ, ヤスヒロ'), 'ワタナベヤスヒロ');
 });
+
+test('cleanNdlName drops life years and spaces', () => {
+  assert.equal(cleanNdlName('尾田, 栄一郎, 1975-'), '尾田栄一郎');
+  assert.equal(cleanNdlName('オダ, エイイチロウ, 1975-'), 'オダエイイチロウ');
+  assert.equal(cleanNdlName('夏目, 漱石, 1867-1916'), '夏目漱石');
+  assert.equal(cleanNdlName('オダ エイイチロウ'), 'オダエイイチロウ');
+  assert.equal(cleanNdlName('尾田,栄一郎,1975-'), '尾田栄一郎');
+});

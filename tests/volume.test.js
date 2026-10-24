@@ -19,6 +19,7 @@ test('splitTitleVolume strips only marked trailing volumes', () => {
   assert.deepEqual(splitTitleVolume('20世紀少年'), { workTitle: '20世紀少年', volume: null });
   assert.deepEqual(splitTitleVolume('1Q84'), { workTitle: '1Q84', volume: null });
   assert.deepEqual(splitTitleVolume('ONE PIECE'), { workTitle: 'ONE PIECE', volume: null });
+  assert.deepEqual(splitTitleVolume('One piece 巻1'), { workTitle: 'One piece', volume: 1 });
 });
 
 test('workKeyOf ignores width, spacing and roles', () => {

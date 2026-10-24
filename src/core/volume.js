@@ -30,7 +30,7 @@ export function parseVolume(label) {
 const D = '[0-9０-９]+';
 const TRAILING_VOLUME = [
   new RegExp(`^(.*?)[\\s　]*[（(]\\s*第?(${D})[巻集]?\\s*[）)]$`),
-  new RegExp(`^(.*\\S)[\\s　]+第?(${D})[巻集]?$`),
+  new RegExp(`^(.*\\S)[\\s　]+(?:第|巻)?(${D})[巻集]?$`),
   new RegExp(`^(.*?\\D)第?(${D})[巻集]$`),
 ];
 

@@ -1,0 +1,54 @@
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:dcndl="http://ndl.go.jp/dcndl/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" version="2.0">
+  <channel>
+    <title>9784763135476 - 国立国会図書館サーチ OpenSearch</title>
+    <link>https://ios-v2-prod-eks-alb.ndlsearch.ndl.go.jp/api/opensearch?isbn=9784763135476</link>
+    <description>Search results for isbn=9784763135476</description>
+    <language>ja</language>
+    <openSearch:totalResults>1</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>200</openSearch:itemsPerPage>
+    <item>
+      <title>1冊20分、読まずに「わかる!」すごい読書術</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000002-I027301837</link>
+      <description><![CDATA[<p>サンマーク出版,2016,978-4-7631-3547-6<p><ul><li>タイトル：1冊20分、読まずに「わかる!」すごい読書術</li><li>タイトル（読み）：イッサツ ニジップン ヨマズニ ワカル スゴイ ドクショジュツ</li><li>責任表示：渡邊康弘 著</li><li>NDC(9)：019.13</li></ul>]]></description>
+      <author>渡邊, 康弘,渡邊康弘 著</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000002-I027301837</guid>
+      <pubDate>Fri, 22 Jul 2016 07:03:01 +0900</pubDate>
+      <dc:title>1冊20分、読まずに「わかる!」すごい読書術</dc:title>
+      <dcndl:titleTranscription>イッサツ ニジップン ヨマズニ ワカル スゴイ ドクショジュツ</dcndl:titleTranscription>
+      <dc:creator>渡邊, 康弘</dc:creator>
+      <dcndl:creatorTranscription>ワタナベ, ヤスヒロ</dcndl:creatorTranscription>
+      <dc:publisher>サンマーク出版</dc:publisher>
+      <dcndl:publicationPlace>JP</dcndl:publicationPlace>
+      <dc:date xsi:type="dcterms:W3CDTF">2016</dc:date>
+      <dcterms:issued>2016.6</dcterms:issued>
+      <dcndl:price>1400円</dcndl:price>
+      <dc:extent>254p</dc:extent>
+      <dc:identifier xsi:type="dcndl:ISBN">978-4-7631-3547-6</dc:identifier>
+      <dc:identifier xsi:type="dcndl:NDLBibID">027301837</dc:identifier>
+      <dc:identifier xsi:type="dcndl:JPNO">22756846</dc:identifier>
+      <dc:identifier xsi:type="dcndl:TOHANMARCNO">33449429</dc:identifier>
+      <dc:subject>速読法</dc:subject>
+      <dc:subject xsi:type="dcndl:NDLC">UG15</dc:subject>
+      <dc:subject xsi:type="dcndl:NDC9">019.13</dc:subject>
+      <dc:description>文献あり</dc:description>
+      <rdfs:seeAlso rdf:resource="https://www.library.pref.hokkaido.jp/wo/opc_srh/"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.sapporo.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1008001055175"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.city.saitama.jp/bookdetail?num=2577237&amp;ctg=1"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.chiba.jp/licsxp-opac/WOpacTifSchCmpdDispAction.do"/>
+      <rdfs:seeAlso rdf:resource="https://opac.pref-lib.niigata.niigata.jp/winj/opac/switch-detail-iccap.do?bibid=1107928443"/>
+      <rdfs:seeAlso rdf:resource="https://www.oml.city.osaka.lg.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000014109047"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib-sakai.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1007000635851"/>
+      <rdfs:seeAlso rdf:resource="https://opac.libnet.pref.okayama.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009812020805"/>
+      <rdfs:seeAlso rdf:resource="http://www.library.city.hiroshima.jp/winj/opac/switch-detail-iccap.do?bibid=1110066713"/>
+      <rdfs:seeAlso rdf:resource="https://opac.miraionlibrary.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000002470005"/>
+      <rdfs:seeAlso rdf:resource="https://www2.library.pref.kagoshima.jp/kento/opac/switch-detail-iccap.do?bibid=1111560021"/>
+      <rdfs:seeAlso rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I027301837"/>
+      <rdfs:seeAlso rdf:resource="https://cir.nii.ac.jp/crid/1970023484889688367"/>
+      <rdfs:seeAlso rdf:resource="https://www.books.or.jp/book-details/9784763135476"/>
+      <dc:description> 2016</dc:description>
+    </item>
+  </channel>
+</rss>

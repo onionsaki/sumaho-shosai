@@ -1,0 +1,207 @@
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:openSearch="http://a9.com/-/spec/opensearchrss/1.0/" xmlns:dcndl="http://ndl.go.jp/dcndl/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:rdfs="http://www.w3.org/2000/01/rdf-schema#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" version="2.0">
+  <channel>
+    <title>すごい読書術 - 国立国会図書館サーチ OpenSearch</title>
+    <link>https://ios-v2-prod-eks-alb.ndlsearch.ndl.go.jp/api/opensearch?title=%E3%81%99%E3%81%94%E3%81%84%E8%AA%AD%E6%9B%B8%E8%A1%93&amp;cnt=5</link>
+    <description>Search results for title=すごい読書術 cnt=5</description>
+    <language>ja</language>
+    <openSearch:totalResults>4</openSearch:totalResults>
+    <openSearch:startIndex>1</openSearch:startIndex>
+    <openSearch:itemsPerPage>5</openSearch:itemsPerPage>
+    <item>
+      <title>頭がよくなるすごい!読書術</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000002-I029563036</link>
+      <description><![CDATA[<p>PHP研究所,2019,978-4-569-78852-4<p><ul><li>タイトル：頭がよくなるすごい!読書術</li><li>タイトル（読み）：アタマ ガ ヨク ナル スゴイ ドクショジュツ</li><li>責任表示：齋藤孝 著,いぢちひろゆき マンガ</li><li>シリーズ名：齋藤孝の「負けない!」シリーズ ; 4</li><li>シリーズ名（読み）：サイトウ タカシ ノ マケナイ シリーズ ; 4</li><li>NDC(10)：019.12</li></ul>]]></description>
+      <author>齋藤, 孝, 1960-,いぢち, ひろゆき, 1969-,齋藤孝 著,いぢちひろゆき マンガ</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000002-I029563036</guid>
+      <pubDate>Mon, 16 May 2022 21:03:19 +0900</pubDate>
+      <dc:title>頭がよくなるすごい!読書術</dc:title>
+      <dcndl:titleTranscription>アタマ ガ ヨク ナル スゴイ ドクショジュツ</dcndl:titleTranscription>
+      <dc:creator>齋藤, 孝, 1960-</dc:creator>
+      <dc:creator>いぢち, ひろゆき, 1969-</dc:creator>
+      <dcndl:creatorTranscription>サイトウ, タカシ, 1960-</dcndl:creatorTranscription>
+      <dcndl:creatorTranscription>イジチ, ヒロユキ, 1969-</dcndl:creatorTranscription>
+      <dcndl:seriesTitle>齋藤孝の「負けない!」シリーズ ; 4</dcndl:seriesTitle>
+      <dcndl:seriesTitleTranscription>サイトウ タカシ ノ マケナイ シリーズ ; 4</dcndl:seriesTitleTranscription>
+      <dc:publisher>PHP研究所</dc:publisher>
+      <dcndl:publicationPlace>JP</dcndl:publicationPlace>
+      <dc:date xsi:type="dcterms:W3CDTF">2019</dc:date>
+      <dcterms:issued>2019.4</dcterms:issued>
+      <dcndl:price>1100円</dcndl:price>
+      <dc:extent>159p</dc:extent>
+      <dc:identifier xsi:type="dcndl:ISBN">978-4-569-78852-4</dc:identifier>
+      <dc:identifier xsi:type="dcndl:NDLBibID">029563036</dc:identifier>
+      <dc:identifier xsi:type="dcndl:JPNO">23195196</dc:identifier>
+      <dc:identifier xsi:type="dcndl:TOHANMARCNO">33898082</dc:identifier>
+      <dc:subject>読書法</dc:subject>
+      <dcndl:genre>児童図書</dcndl:genre>
+      <dcndl:genreTranscription>ジドウ トショ</dcndl:genreTranscription>
+      <dc:subject xsi:type="dcndl:NDLC">Y5</dc:subject>
+      <dc:subject xsi:type="dcndl:NDC10">019.12</dc:subject>
+      <rdfs:seeAlso rdf:resource="https://www.library.pref.hokkaido.jp/wo/opc_srh/"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.sapporo.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1008001362657"/>
+      <rdfs:seeAlso rdf:resource="https://www.apl.pref.akita.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009920663111"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.pref.ibaraki.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1003000427003"/>
+      <rdfs:seeAlso rdf:resource="https://www1.library.pref.gunma.jp/winj/opac/switch-detail-iccap.do?bibid=1110694026"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.city.saitama.jp/bookdetail?num=2892624&amp;ctg=1"/>
+      <rdfs:seeAlso rdf:resource="https://catalog.library.metro.tokyo.lg.jp/winj/opac/switch-detail-iccap.do?bibid=1153338663"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.pref.ishikawa.lg.jp/wo/opc_srh/srh_detail/1000001214819/"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.pref.yamanashi.jp/licsxp-opac/WOpacMnuTopInitAction.do"/>
+      <rdfs:seeAlso rdf:resource="https://www.shiga-pref-library.jp/wo/opc_srh/srh_detail/4639672/"/>
+      <rdfs:seeAlso rdf:resource="https://www.oml.city.osaka.lg.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000014660071"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib-sakai.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1007000916310"/>
+      <rdfs:seeAlso rdf:resource="http://www.library.pref.tottori.jp/winj/opac/switch-detail-iccap.do?bibid=1120255019"/>
+      <rdfs:seeAlso rdf:resource="https://opac.libnet.pref.okayama.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009812297258"/>
+      <rdfs:seeAlso rdf:resource="https://library.pref.yamaguchi.lg.jp//wo/opc_srh/srh_detail/1001636084/"/>
+      <rdfs:seeAlso rdf:resource="https://alislibopac.bunmori.tokushima.jp/winj/opac/switch-detail-iccap.do?bibid=1110322883"/>
+      <rdfs:seeAlso rdf:resource="https://opac.miraionlibrary.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000002739332"/>
+      <rdfs:seeAlso rdf:resource="https://www2.library.pref.kagoshima.jp/kento/opac/switch-detail-iccap.do?bibid=1111822847"/>
+      <rdfs:seeAlso rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I029563036"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.pref.osaka.jp/bibj/?B13670752"/>
+      <rdfs:seeAlso rdf:resource="https://cir.nii.ac.jp/crid/1971149384824868149"/>
+      <rdfs:seeAlso rdf:resource="https://www.books.or.jp/book-details/9784569788524"/>
+      <dc:description> 2019</dc:description>
+    </item>
+    <item>
+      <title>1冊20分、読まずに「わかる!」すごい読書術</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000002-I027301837</link>
+      <description><![CDATA[<p>サンマーク出版,2016,978-4-7631-3547-6<p><ul><li>タイトル：1冊20分、読まずに「わかる!」すごい読書術</li><li>タイトル（読み）：イッサツ ニジップン ヨマズニ ワカル スゴイ ドクショジュツ</li><li>責任表示：渡邊康弘 著</li><li>NDC(9)：019.13</li></ul>]]></description>
+      <author>渡邊, 康弘,渡邊康弘 著</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000002-I027301837</guid>
+      <pubDate>Fri, 22 Jul 2016 07:03:01 +0900</pubDate>
+      <dc:title>1冊20分、読まずに「わかる!」すごい読書術</dc:title>
+      <dcndl:titleTranscription>イッサツ ニジップン ヨマズニ ワカル スゴイ ドクショジュツ</dcndl:titleTranscription>
+      <dc:creator>渡邊, 康弘</dc:creator>
+      <dcndl:creatorTranscription>ワタナベ, ヤスヒロ</dcndl:creatorTranscription>
+      <dc:publisher>サンマーク出版</dc:publisher>
+      <dcndl:publicationPlace>JP</dcndl:publicationPlace>
+      <dc:date xsi:type="dcterms:W3CDTF">2016</dc:date>
+      <dcterms:issued>2016.6</dcterms:issued>
+      <dcndl:price>1400円</dcndl:price>
+      <dc:extent>254p</dc:extent>
+      <dc:identifier xsi:type="dcndl:ISBN">978-4-7631-3547-6</dc:identifier>
+      <dc:identifier xsi:type="dcndl:NDLBibID">027301837</dc:identifier>
+      <dc:identifier xsi:type="dcndl:JPNO">22756846</dc:identifier>
+      <dc:identifier xsi:type="dcndl:TOHANMARCNO">33449429</dc:identifier>
+      <dc:subject>速読法</dc:subject>
+      <dc:subject xsi:type="dcndl:NDLC">UG15</dc:subject>
+      <dc:subject xsi:type="dcndl:NDC9">019.13</dc:subject>
+      <dc:description>文献あり</dc:description>
+      <rdfs:seeAlso rdf:resource="https://www.library.pref.hokkaido.jp/wo/opc_srh/"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.sapporo.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1008001055175"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.city.saitama.jp/bookdetail?num=2577237&amp;ctg=1"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.chiba.jp/licsxp-opac/WOpacTifSchCmpdDispAction.do"/>
+      <rdfs:seeAlso rdf:resource="https://opac.pref-lib.niigata.niigata.jp/winj/opac/switch-detail-iccap.do?bibid=1107928443"/>
+      <rdfs:seeAlso rdf:resource="https://www.oml.city.osaka.lg.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000014109047"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib-sakai.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1007000635851"/>
+      <rdfs:seeAlso rdf:resource="https://opac.libnet.pref.okayama.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009812020805"/>
+      <rdfs:seeAlso rdf:resource="http://www.library.city.hiroshima.jp/winj/opac/switch-detail-iccap.do?bibid=1110066713"/>
+      <rdfs:seeAlso rdf:resource="https://opac.miraionlibrary.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000002470005"/>
+      <rdfs:seeAlso rdf:resource="https://www2.library.pref.kagoshima.jp/kento/opac/switch-detail-iccap.do?bibid=1111560021"/>
+      <rdfs:seeAlso rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I027301837"/>
+      <rdfs:seeAlso rdf:resource="https://cir.nii.ac.jp/crid/1970023484889688367"/>
+      <rdfs:seeAlso rdf:resource="https://www.books.or.jp/book-details/9784763135476"/>
+      <dc:description> 2016</dc:description>
+    </item>
+    <item>
+      <title>速読日本一が教えるすごい読書術 : 短時間で記憶に残る最強メソッド</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000002-I028862555</link>
+      <description><![CDATA[<p>ダイヤモンド社,2018,978-4-478-10523-8<p><ul><li>タイトル：速読日本一が教えるすごい読書術 : 短時間で記憶に残る最強メソッド</li><li>タイトル（読み）：ソクドク ニホンイチ ガ オシエル スゴイ ドクショジュツ : タンジカン デ キオク ニ ノコル サイキョウ メソッド</li><li>責任表示：角田和将 著</li><li>NDC(10)：019.13</li></ul>]]></description>
+      <author>角田, 和将, 1978-,角田和将 著</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000002-I028862555</guid>
+      <pubDate>Thu, 5 Apr 2018 20:58:43 +0900</pubDate>
+      <dc:title>速読日本一が教えるすごい読書術 : 短時間で記憶に残る最強メソッド</dc:title>
+      <dcndl:titleTranscription>ソクドク ニホンイチ ガ オシエル スゴイ ドクショジュツ : タンジカン デ キオク ニ ノコル サイキョウ メソッド</dcndl:titleTranscription>
+      <dc:creator>角田, 和将, 1978-</dc:creator>
+      <dcndl:creatorTranscription>ツノダ, カズマサ, 1978-</dcndl:creatorTranscription>
+      <dc:publisher>ダイヤモンド社</dc:publisher>
+      <dcndl:publicationPlace>JP</dcndl:publicationPlace>
+      <dc:date xsi:type="dcterms:W3CDTF">2018</dc:date>
+      <dcterms:issued>2018.3</dcterms:issued>
+      <dcndl:price>1400円</dcndl:price>
+      <dc:extent>197p</dc:extent>
+      <dc:identifier xsi:type="dcndl:ISBN">978-4-478-10523-8</dc:identifier>
+      <dc:identifier xsi:type="dcndl:NDLBibID">028862555</dc:identifier>
+      <dc:identifier xsi:type="dcndl:JPNO">23030604</dc:identifier>
+      <dc:identifier xsi:type="dcndl:TOHANMARCNO">33737911</dc:identifier>
+      <dc:subject>速読法</dc:subject>
+      <dc:subject xsi:type="dcndl:NDLC">Y76</dc:subject>
+      <dc:subject xsi:type="dcndl:NDC10">019.13</dc:subject>
+      <dc:description>文献あり</dc:description>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.sapporo.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1008001252521"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.city.saitama.jp/bookdetail?num=2784392&amp;ctg=1"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.chiba.jp/licsxp-opac/WOpacTifSchCmpdDispAction.do"/>
+      <rdfs:seeAlso rdf:resource="https://opac.lib.city.yokohama.lg.jp/winj/opac/switch-detail-iccap.do?bibid=1113572814"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.kawasaki.jp/bookdetail?num=3018190&amp;ctg=1"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.sagamihara.kanagawa.jp/TOSHOW/asp/WwShousaiKen.aspx?FCode=2096515"/>
+      <rdfs:seeAlso rdf:resource="https://opac.pref-lib.niigata.niigata.jp/winj/opac/switch-detail-iccap.do?bibid=1120114596"/>
+      <rdfs:seeAlso rdf:resource="https://www.library-archives.pref.fukui.lg.jp/wo/opc_srh/srh_detail/1110322315/"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.nagoya.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1001710102632"/>
+      <rdfs:seeAlso rdf:resource="https://www.oml.city.osaka.lg.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000014466027"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib-sakai.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1007000812622"/>
+      <rdfs:seeAlso rdf:resource="https://opac.libnet.pref.okayama.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1009812199855"/>
+      <rdfs:seeAlso rdf:resource="http://www.library.city.hiroshima.jp/winj/opac/switch-detail-iccap.do?bibid=1110233706"/>
+      <rdfs:seeAlso rdf:resource="http://www.lib.pref.fukuoka.jp/winj/opac/switch-detail-iccap.do?bibid=1111428102"/>
+      <rdfs:seeAlso rdf:resource="https://www.toshokan.city.fukuoka.lg.jp/winj/opac/switch-detail-iccap.do?bibid=1101681613"/>
+      <rdfs:seeAlso rdf:resource="https://opac.miraionlibrary.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000002644927"/>
+      <rdfs:seeAlso rdf:resource="https://www.library.pref.okinawa.jp/winj/opac/switch-detail-iccap.do?bibid=1101509441"/>
+      <rdfs:seeAlso rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I028862555"/>
+      <rdfs:seeAlso rdf:resource="https://cir.nii.ac.jp/crid/1971712334751353121"/>
+      <rdfs:seeAlso rdf:resource="https://www.books.or.jp/book-details/47810523000000000000"/>
+      <rdfs:seeAlso rdf:resource="https://www.books.or.jp/book-details/90357800000000240876"/>
+      <rdfs:seeAlso rdf:resource="https://www.books.or.jp/book-details/9784478105238"/>
+      <dc:description> 2018</dc:description>
+    </item>
+    <item>
+      <title>らく速読 : 脳科学が証明した世界一カンタンですごい読書術</title>
+      <link>https://ndlsearch.ndl.go.jp/books/R100000002-I033482399</link>
+      <description><![CDATA[<p>KADOKAWA,2024,978-4-04-606684-8<p><ul><li>タイトル：らく速読 : 脳科学が証明した世界一カンタンですごい読書術</li><li>タイトル（読み）：ラクソクドク : ノウカガク ガ ショウメイ シタ セカイイチ カンタン デ スゴイ ドクショジュツ</li><li>責任表示：ヨンソ 著,伊藤吉賢 総監修</li><li>NDC(10)：019.13</li></ul>]]></description>
+      <author>ヨンソ, 1974-,伊藤, 吉賢,ヨンソ 著,伊藤吉賢 総監修</author>
+      <category>図書</category>
+      <category>紙</category>
+      <guid isPermaLink="true">https://ndlsearch.ndl.go.jp/books/R100000002-I033482399</guid>
+      <pubDate>Tue, 9 Jul 2024 18:27:39 +0900</pubDate>
+      <dc:title>らく速読 : 脳科学が証明した世界一カンタンですごい読書術</dc:title>
+      <dcndl:titleTranscription>ラクソクドク : ノウカガク ガ ショウメイ シタ セカイイチ カンタン デ スゴイ ドクショジュツ</dcndl:titleTranscription>
+      <dc:creator>ヨンソ, 1974-</dc:creator>
+      <dc:creator>伊藤, 吉賢</dc:creator>
+      <dcndl:creatorTranscription>ヨンソ, 1974-</dcndl:creatorTranscription>
+      <dcndl:creatorTranscription>イトウ, ヨシタカ</dcndl:creatorTranscription>
+      <dc:publisher>KADOKAWA</dc:publisher>
+      <dcndl:publicationPlace>JP</dcndl:publicationPlace>
+      <dc:date xsi:type="dcterms:W3CDTF">2024</dc:date>
+      <dcterms:issued>2024.5</dcterms:issued>
+      <dcndl:price>1400円</dcndl:price>
+      <dc:extent>189p</dc:extent>
+      <dc:identifier xsi:type="dcndl:ISBN">978-4-04-606684-8</dc:identifier>
+      <dc:identifier xsi:type="dcndl:NDLBibID">033482399</dc:identifier>
+      <dc:identifier xsi:type="dcndl:JPNO">23998034</dc:identifier>
+      <dc:identifier xsi:type="dcndl:TOHANMARCNO">34608832</dc:identifier>
+      <dc:subject>速読法</dc:subject>
+      <dc:subject xsi:type="dcndl:NDLC">UG15</dc:subject>
+      <dc:subject xsi:type="dcndl:NDC10">019.13</dc:subject>
+      <dc:description>出版</dc:description>
+      <dc:description>音声付</dc:description>
+      <dc:description>文献あり</dc:description>
+      <rdfs:seeAlso rdf:resource="https://www.library.city.sapporo.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1008001860056"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.pref.ibaraki.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1003000877019"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib.city.saitama.jp/bookdetail?num=3386367&amp;ctg=1"/>
+      <rdfs:seeAlso rdf:resource="https://www.toshokan.city.shizuoka.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000000031137"/>
+      <rdfs:seeAlso rdf:resource="https://www.toshokan.city.shizuoka.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1002000042347"/>
+      <rdfs:seeAlso rdf:resource="https://www.oml.city.osaka.lg.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000015534382"/>
+      <rdfs:seeAlso rdf:resource="https://www.lib-sakai.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1007001395331"/>
+      <rdfs:seeAlso rdf:resource="http://www.library.city.hiroshima.jp/winj/opac/switch-detail-iccap.do?bibid=1110751194"/>
+      <rdfs:seeAlso rdf:resource="https://opac.miraionlibrary.jp/licsxp-opac/WOpacMsgNewListToTifTilDetailAction.do?tilcod=1000003206085"/>
+      <rdfs:seeAlso rdf:resource="https://ndlsearch.ndl.go.jp/books/R100000002-I033482399"/>
+      <rdfs:seeAlso rdf:resource="https://cir.nii.ac.jp/crid/1970867909854189988"/>
+      <rdfs:seeAlso rdf:resource="https://www.books.or.jp/book-details/04606684A16308400000"/>
+      <rdfs:seeAlso rdf:resource="https://www.books.or.jp/book-details/9784046066848"/>
+      <dc:description> 2024</dc:description>
+    </item>
+  </channel>
+</rss>
