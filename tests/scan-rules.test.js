@@ -122,3 +122,9 @@ test('checkResult includes the work for a volume', () => {
   assert.deepEqual(r.work.summary.missing, []);
   assert.equal(r.book, thirteen);
 });
+
+test('confirmer with a 3 s window accepts slow phones', () => {
+  const c = createConfirmer({ windowMs: 3000 });
+  assert.equal(c.push('A', 0), null);
+  assert.equal(c.push('A', 1400), 'A'); // 1.4 s per read still confirms
+});

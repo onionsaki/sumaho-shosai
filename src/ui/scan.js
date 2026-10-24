@@ -3,7 +3,7 @@
 import { h, toast, segmented, formatDate } from './dom.js';
 import { startCamera } from '../camera.js';
 import { createFeedback } from '../feedback.js';
-import { classifyBarcode } from '../core/isbn.js';
+import { classifyBarcode, toIsbn13 } from '../core/isbn.js';
 import { createConfirmer } from '../core/confirm.js';
 import { applyScan } from '../core/session.js';
 import { checkResult } from '../core/check.js';
@@ -36,10 +36,12 @@ export function mount(container, ctx) {
     wakeLock = null;
   }
 
-  async function start(video, handle) {
+  // A slow phone may need over a second per read, so the two matching reads may be up to 3 s apart.
+  async function start(video, handle, statusEl) {
     feedback.unlock();
-    const confirmer = createConfirmer();
+    const confirmer = createConfirmer({ windowMs: 3000 });
     let chain = Promise.resolve();
+    if (statusEl) statusEl.textContent = 'カメラを準備しています…';
     try {
       stopCamera = await startCamera(video, {
         onCode: raw => {
@@ -47,6 +49,10 @@ export function mount(container, ctx) {
           if (!code) return;
           chain = chain.then(() => handle(code)).catch(err => toast(`エラー：${err?.message ?? err}`));
         },
+        onStatus: st => {
+          if (statusEl) statusEl.textContent = `読み取り：${st.kind}・${st.ticks}回・1回${st.ms}ms・最後に見えた番号 ${st.last || 'なし'}`;
+        },
+        onError: err => { if (statusEl) statusEl.textContent = `読み取りエラー：${err?.message ?? err}`; },
       });
       await keepAwake();
       return true;
@@ -54,6 +60,20 @@ export function mount(container, ctx) {
       toast('カメラを使えませんでした。Chromeの設定でカメラを許可してください');
       return false;
     }
+  }
+
+  // Typing the number works the same as scanning it (for barcodes the camera cannot read).
+  function manualEntry(label, handle) {
+    const input = h('input', { type: 'text', inputmode: 'numeric', placeholder: '978…（ハイフンなしでも可）' });
+    const go = () => {
+      const isbn = toIsbn13(input.value);
+      if (!isbn) { toast('ISBNの数字が正しくありません'); return; }
+      input.value = '';
+      feedback.unlock();
+      handle(isbn).catch(err => toast(`エラー：${err?.message ?? err}`));
+    };
+    input.addEventListener('keydown', e => { if (e.key === 'Enter') go(); });
+    return h('div', { class: 'search-row', style: { marginTop: '8px' } }, input, h('button', { class: 'btn', onClick: go }, label));
   }
 
   // ---------- register mode ----------
@@ -81,7 +101,11 @@ export function mount(container, ctx) {
     };
 
     body.replaceChildren(
-      h('p', { class: 'muted small' }, 'この回に読み取る本へ、まとめて付ける内容を選んでください。'),
+      h('button', { class: 'btn primary wide', onClick: async () => {
+        await db.setSetting('lastSession', session);
+        runRegister(session, tags);
+      } }, '始める（カメラが開きます）'),
+      h('p', { class: 'muted small' }, 'この回に読み取る本へ、まとめて付ける内容を下で選べます。前回の選び方を覚えています。'),
       h('div', { class: 'section-title' }, '持っているか'),
       segmented(OWNERSHIP_OPTIONS, session.ownership, v => { session.ownership = v; }),
       h('div', { class: 'section-title' }, '読んだか（新しく登録する本だけ）'),
@@ -89,11 +113,6 @@ export function mount(container, ctx) {
       h('div', { class: 'section-title' }, 'タグ'),
       tagWrap,
       h('div', { class: 'search-row', style: { marginTop: '8px' } }, newTag, h('button', { class: 'btn', onClick: addTag }, '追加')),
-      h('div', { style: { marginTop: '20px' } },
-        h('button', { class: 'btn primary wide', onClick: async () => {
-          await db.setSetting('lastSession', session);
-          runRegister(session, tags);
-        } }, '始める')),
     );
   }
 
@@ -103,6 +122,7 @@ export function mount(container, ctx) {
     const count = h('div', { class: 'scan-count' });
     const log = h('ul', { class: 'scan-log' });
     const undoBtn = h('button', { class: 'btn', disabled: true }, '取り消し');
+    const statusEl = h('div', { class: 'muted small' });
     const tagNames = session.tagIds.map(id => tags.find(t => t.id === id)?.name).filter(Boolean);
 
     const stateOf = e => {
@@ -166,22 +186,25 @@ export function mount(container, ctx) {
       h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })),
       h('div', { class: 'muted small', style: { marginTop: '6px' } },
         `${LABELS.ownership[session.ownership]}・${LABELS.read[session.readStatus]}${tagNames.length ? `・${tagNames.join('、')}` : ''}`),
+      statusEl,
       count,
       h('div', { class: 'row-buttons' }, undoBtn, h('button', { class: 'btn primary', onClick: finish }, '終える')),
+      manualEntry('登録', handle),
       log,
     );
     render();
-    start(video, handle).then(ok => { if (!ok) finish(); });
+    start(video, handle, statusEl).then(ok => { if (!ok) statusEl.textContent = 'カメラを使えません。下の欄に番号を打って登録できます'; });
   }
 
   // ---------- check mode ----------
   function renderCheck() {
     const video = h('video');
     const card = h('div');
+    const statusEl = h('div', { class: 'muted small' });
     let running = false;
     const startBtn = h('button', { class: 'btn primary wide', onClick: async () => {
       if (running) return;
-      running = await start(video, handle);
+      running = await start(video, handle, statusEl);
       if (running) startBtn.remove();
     } }, '確認を始める');
 
@@ -252,7 +275,9 @@ export function mount(container, ctx) {
     body.replaceChildren(
       h('p', { class: 'muted small' }, '本屋で、持っているかを確かめます。何も保存しません。'),
       h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })),
+      statusEl,
       h('div', { style: { marginTop: '10px' } }, startBtn),
+      manualEntry('確認', handle),
       card,
     );
   }
