@@ -140,12 +140,12 @@ export function detectQuad(img) {
   }
   const typical = median(clean.map(([x, y, p]) => diff(p, expected(x, y))));
   const dmap = new Float32Array(w * h);
-  const shadow = new Uint8Array(w * h); // only darker, same hue: never grown into below
+  const darker = new Uint8Array(w * h); // darker than the cloth with the same hue: shadow, or black print
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     const p = px(x, y), e = expected(x, y);
     dmap[y * w + x] = diff(p, e);
     const lp = (p[0] + p[1] + p[2]) / 3, le = (e[0] + e[1] + e[2]) / 3;
-    shadow[y * w + x] = lp < le - 6 && Math.abs(sat(p) - sat(e)) < 14 ? 1 : 0;
+    darker[y * w + x] = lp < le - 6 && Math.abs(sat(p) - sat(e)) < 14 ? 1 : 0;
   }
   // The cut between "cloth" and "book" is read from this photo (Otsu: the split that best separates two groups),
   // never below what the cloth's own texture reaches.
@@ -156,13 +156,19 @@ export function detectQuad(img) {
   // Two levels: grow from the clearly-book parts into anything joined to them that is only a little off the
   // cloth, so a white cover on light grey is kept while loose shine on the cloth is not (real photo 2026-10-25).
   const weak = Math.max(20, typical * 3);
+  // Darker pixels are crossed only in thin runs (lines of print, at most 2 cells); a wide dark area is
+  // a shadow or another object, and growth stops there.
   const stack = [];
-  for (let i = 0; i < w * h; i++) if (mask[i]) stack.push(i);
+  for (let i = 0; i < w * h; i++) if (mask[i]) stack.push([i, 0]);
   while (stack.length) {
-    const i = stack.pop();
+    const [i, run] = stack.pop();
     const x = i % w;
     for (const j of [x + 1 < w ? i + 1 : -1, x > 0 ? i - 1 : -1, i + w < w * h ? i + w : -1, i - w]) {
-      if (j >= 0 && !mask[j] && !shadow[j] && dmap[j] > weak) { mask[j] = 1; stack.push(j); }
+      if (j < 0 || mask[j] || dmap[j] <= weak) continue;
+      const r = darker[j] ? run + 1 : 0;
+      if (r > 2) continue;
+      mask[j] = 1;
+      stack.push([j, r]);
     }
   }
 
