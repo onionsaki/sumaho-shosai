@@ -37,27 +37,48 @@ export function toast(message, { action, ms = 3500 } = {}) {
   setTimeout(() => item.remove(), action ? ms * 2 : ms);
 }
 
-export function sheet(content, { title = '' } = {}) {
+// Open sheets, newest last. Each one gets a history entry so the phone's back gesture closes it
+// (鬼さん 2026-10-25: closing should not need a reach to the top-left corner).
+const openSheets = [];
+let sheetSeq = 0;
+window.addEventListener('popstate', e => {
+  // An entry left behind by a sheet closed with its own button: step over it.
+  if (e.state?.deadSheet) { history.back(); return; }
+  const keep = e.state?.sheet ?? 0;
+  for (const s of [...openSheets].reverse()) if (s.id > keep) s.close(true);
+});
+
+export function sheet(content, { title = '', thumbClose = false } = {}) {
   const root = document.getElementById('sheets');
+  const id = ++sheetSeq;
   const backdrop = h('div', { class: 'sheet-backdrop' });
   const actionSlot = h('span', { class: 'sheet-action' });
-  const panel = h('section', { class: 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
+  const panel = h('section', { class: thumbClose ? 'sheet has-thumb' : 'sheet', role: 'dialog', 'aria-modal': 'true', 'aria-label': title },
     h('header', { class: 'sheet-head' },
       h('button', { class: 'round-btn', 'aria-label': '閉じる', onClick: () => close() }, icon('close')),
       h('h2', {}, title),
       actionSlot),
-    h('div', { class: 'sheet-body' }, content));
+    h('div', { class: 'sheet-body' }, content),
+    // Second close button where the thumb rests (right-handed, bottom right).
+    thumbClose ? h('button', { class: 'round-btn thumb-close', 'aria-label': '閉じる', onClick: () => close() }, icon('close')) : null);
   // A button at the top right (Yomoo-style 登録), so a long form needs no scrolling to save.
   const setAction = (label, onClick) => fill(actionSlot, label ? h('button', { class: 'head-action', onClick }, label) : null);
   const listeners = new Set();
-  function close() {
+  let closed = false;
+  function close(fromHistory = false) {
+    if (closed) return;
+    closed = true;
+    openSheets.splice(openSheets.findIndex(s => s.id === id), 1);
+    if (!fromHistory && history.state?.sheet === id) history.replaceState({ deadSheet: true }, '');
     backdrop.remove();
     panel.remove();
     for (const cb of listeners) cb();
   }
-  backdrop.addEventListener('click', close);
+  openSheets.push({ id, close });
+  history.pushState({ sheet: id }, '');
+  backdrop.addEventListener('click', () => close());
   root.append(backdrop, panel);
-  return { close, onClose: cb => listeners.add(cb), body: panel.querySelector('.sheet-body'), setAction };
+  return { close: () => close(), onClose: cb => listeners.add(cb), body: panel.querySelector('.sheet-body'), setAction };
 }
 
 export function confirmDialog(message, okLabel = 'OK') {

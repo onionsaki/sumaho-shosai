@@ -1,67 +1,170 @@
 // Find a book's four corners in a photo (鬼さん 2026-10-25: "B" — Lens-style automatic cut-out).
-// Light on purpose (no image library): the photo's edges are taken as background, the largest region that
-// differs from them is the book, and its four extreme points are the corners. The user can still drag them.
+// Light on purpose (no image library). Steps:
+//  1. background: the photo's edges, allowing light that changes across the frame (a fitted colour gradient);
+//  2. the book: every sizeable region that differs from the background, with small gaps closed,
+//     so stripes or patches on the cover that match the cloth do not split it apart;
+//  3. corners: the largest quadrilateral inside the convex outline of that region.
+// The user can still drag the corners afterwards.
 
-const WORK_SIDE = 240; // detection runs on a small copy; corners are scaled back
+const WORK_SIDE = 200; // detection runs on a small copy; corners are scaled back
+
+// Least-squares plane c = a + b·x + d·y for one colour channel over the border pixels.
+function fitPlane(samples, c) {
+  let n = 0, sx = 0, sy = 0, sxx = 0, syy = 0, sxy = 0, sv = 0, sxv = 0, syv = 0;
+  for (const [x, y, p] of samples) {
+    const v = p[c];
+    n++; sx += x; sy += y; sxx += x * x; syy += y * y; sxy += x * y; sv += v; sxv += x * v; syv += y * v;
+  }
+  // Solve the 3x3 normal equations by Cramer's rule.
+  const m = [[n, sx, sy], [sx, sxx, sxy], [sy, sxy, syy]], r = [sv, sxv, syv];
+  const det3 = a => a[0][0] * (a[1][1] * a[2][2] - a[1][2] * a[2][1]) - a[0][1] * (a[1][0] * a[2][2] - a[1][2] * a[2][0]) + a[0][2] * (a[1][0] * a[2][1] - a[1][1] * a[2][0]);
+  const D = det3(m);
+  if (Math.abs(D) < 1e-9) return [sv / n, 0, 0];
+  const col = k => det3(m.map((row, i) => row.map((v, j) => (j === k ? r[i] : v)))) / D;
+  return [col(0), col(1), col(2)];
+}
+
+function convexHull(points) {
+  const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
+  const lower = [], upper = [];
+  for (const p of pts) { while (lower.length >= 2 && cross(lower.at(-2), lower.at(-1), p) <= 0) lower.pop(); lower.push(p); }
+  for (const p of pts.reverse()) { while (upper.length >= 2 && cross(upper.at(-2), upper.at(-1), p) <= 0) upper.pop(); upper.push(p); }
+  return lower.slice(0, -1).concat(upper.slice(0, -1));
+}
+
+const area4 = q => Math.abs(q.reduce((s, p, i) => { const n = q[(i + 1) % 4]; return s + p[0] * n[1] - n[0] * p[1]; }, 0)) / 2;
+
+// Largest quadrilateral with corners on the hull: start from the extreme points, then move each corner
+// along the hull while the area grows.
+function biggestQuad(hull) {
+  const n = hull.length;
+  if (n < 4) return null;
+  const pick = f => hull.reduce((bi, p, i) => (f(p) > f(hull[bi]) ? i : bi), 0);
+  let idx = [pick(p => -p[0] - p[1]), pick(p => p[0] - p[1]), pick(p => p[0] + p[1]), pick(p => p[1] - p[0])];
+  if (new Set(idx).size < 4) idx = [0, Math.floor(n / 4), Math.floor(n / 2), Math.floor((3 * n) / 4)];
+  let best = area4(idx.map(i => hull[i]));
+  for (let round = 0; round < 6; round++) {
+    let improved = false;
+    for (let k = 0; k < 4; k++) {
+      for (let j = 0; j < n; j++) {
+        if (idx.includes(j)) continue;
+        const trial = [...idx];
+        trial[k] = j;
+        // keep the corners in hull order so the quad does not fold over itself
+        const order = trial.map((v, i) => [v, i]).sort((a, b) => a[0] - b[0]).map(p => p[1]);
+        const rotations = [0, 1, 2, 3].some(r => order.every((v, i) => v === (i + r) % 4));
+        if (!rotations) continue;
+        const a = area4(trial.map(i => hull[i]));
+        if (a > best + 1e-9) { best = a; idx = trial; improved = true; }
+      }
+    }
+    if (!improved) break;
+  }
+  return idx.map(i => hull[i]);
+}
+
+// Corners in the order top-left, top-right, bottom-right, bottom-left.
+function orderCorners(q) {
+  const cx = q.reduce((s, p) => s + p[0], 0) / 4, cy = q.reduce((s, p) => s + p[1], 0) / 4;
+  const byAngle = [...q].sort((a, b) => Math.atan2(a[1] - cy, a[0] - cx) - Math.atan2(b[1] - cy, b[0] - cx));
+  const start = byAngle.reduce((bi, p, i) => (p[0] + p[1] < byAngle[bi][0] + byAngle[bi][1] ? i : bi), 0);
+  return [0, 1, 2, 3].map(i => byAngle[(start + i) % 4]);
+}
 
 export function detectQuad(img) {
   const scale = Math.min(1, WORK_SIDE / Math.max(img.width, img.height));
   const w = Math.max(1, Math.round(img.width * scale));
   const h = Math.max(1, Math.round(img.height * scale));
-  const px = (x, y) => {
-    const sx = Math.min(img.width - 1, Math.floor((x + 0.5) / scale));
-    const sy = Math.min(img.height - 1, Math.floor((y + 0.5) / scale));
-    const i = (sy * img.width + sx) * 4;
-    return [img.data[i], img.data[i + 1], img.data[i + 2]];
-  };
+  // Average the source pixels that fall in each small cell (smooths cloth texture and noise).
+  const small = new Float32Array(w * h * 3);
+  const counts = new Uint32Array(w * h);
+  for (let y = 0; y < img.height; y++) {
+    const cy = Math.min(h - 1, Math.floor(y * scale));
+    for (let x = 0; x < img.width; x++) {
+      const cx = Math.min(w - 1, Math.floor(x * scale));
+      const i = (y * img.width + x) * 4, j = cy * w + cx;
+      small[j * 3] += img.data[i]; small[j * 3 + 1] += img.data[i + 1]; small[j * 3 + 2] += img.data[i + 2];
+      counts[j]++;
+    }
+  }
+  for (let j = 0; j < w * h; j++) for (let c = 0; c < 3; c++) small[j * 3 + c] /= counts[j] || 1;
+  const px = (x, y) => { const j = (y * w + x) * 3; return [small[j], small[j + 1], small[j + 2]]; };
 
-  // Background colour from a band around the edges.
-  const band = Math.max(1, Math.round(Math.min(w, h) * 0.04));
+  // 1. background colour as a gradient over the frame, fitted to a band along the edges
+  const band = Math.max(1, Math.round(Math.min(w, h) * 0.05));
   const border = [];
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    if (x < band || y < band || x >= w - band || y >= h - band) border.push(px(x, y));
+    if (x < band || y < band || x >= w - band || y >= h - band) border.push([x, y, px(x, y)]);
   }
-  const mean = [0, 1, 2].map(c => border.reduce((s, p) => s + p[c], 0) / border.length);
-  const spread = Math.sqrt(border.reduce((s, p) => s + (p[0] - mean[0]) ** 2 + (p[1] - mean[1]) ** 2 + (p[2] - mean[2]) ** 2, 0) / border.length);
-  const limit = Math.max(45, spread * 2.5);
+  const planes = [0, 1, 2].map(c => fitPlane(border, c));
+  const expected = (x, y) => planes.map(([a, b, d]) => a + b * x + d * y);
+  const resid = border.map(([x, y, p]) => { const e = expected(x, y); return Math.hypot(p[0] - e[0], p[1] - e[1], p[2] - e[2]); });
+  const sorted = [...resid].sort((a, b) => a - b);
+  const typical = sorted[Math.floor(sorted.length * 0.8)] ?? 0; // most of the edge band, ignoring a book that touches it
+  const limit = Math.max(40, typical * 1.8);
 
-  const fg = new Uint8Array(w * h);
+  let mask = new Uint8Array(w * h);
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const p = px(x, y);
-    fg[y * w + x] = Math.hypot(p[0] - mean[0], p[1] - mean[1], p[2] - mean[2]) > limit ? 1 : 0;
+    const p = px(x, y), e = expected(x, y);
+    mask[y * w + x] = Math.hypot(p[0] - e[0], p[1] - e[1], p[2] - e[2]) > limit ? 1 : 0;
   }
 
-  // Largest connected region of "not background".
+  // 2. close small gaps (dilate then erode) so a cover split by cloth-coloured stripes joins up
+  const r = Math.max(1, Math.round(Math.min(w, h) * 0.035));
+  // A square window splits into a row pass and a column pass (same result, far fewer steps on a phone).
+  const pass = (src, grow, horizontal) => {
+    const out = new Uint8Array(w * h);
+    for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+      let v = grow ? 0 : 1;
+      for (let d = -r; d <= r; d++) {
+        const nx = horizontal ? x + d : x, ny = horizontal ? y : y + d;
+        const s = nx < 0 || ny < 0 || nx >= w || ny >= h ? 0 : src[ny * w + nx];
+        if (grow && s) { v = 1; break; }
+        if (!grow && !s) { v = 0; break; }
+      }
+      out[y * w + x] = v;
+    }
+    return out;
+  };
+  const morph = (src, grow) => pass(pass(src, grow, true), grow, false);
+  mask = morph(morph(mask, true), false);
+
+  // keep the largest region plus any other sizeable piece (a cover can still come apart in places)
   const seen = new Uint8Array(w * h);
-  let best = null;
+  const regions = [];
   for (let start = 0; start < w * h; start++) {
-    if (!fg[start] || seen[start]) continue;
-    const stack = [start];
-    const pts = [];
+    if (!mask[start] || seen[start]) continue;
+    const stack = [start], pts = [];
     seen[start] = 1;
     while (stack.length) {
       const i = stack.pop();
       pts.push(i);
       const x = i % w, y = (i - x) / w;
-      for (const [nx, ny] of [[x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]]) {
-        if (nx < 0 || ny < 0 || nx >= w || ny >= h) continue;
-        const j = ny * w + nx;
-        if (fg[j] && !seen[j]) { seen[j] = 1; stack.push(j); }
-      }
+      if (x + 1 < w && mask[i + 1] && !seen[i + 1]) { seen[i + 1] = 1; stack.push(i + 1); }
+      if (x > 0 && mask[i - 1] && !seen[i - 1]) { seen[i - 1] = 1; stack.push(i - 1); }
+      if (y + 1 < h && mask[i + w] && !seen[i + w]) { seen[i + w] = 1; stack.push(i + w); }
+      if (y > 0 && mask[i - w] && !seen[i - w]) { seen[i - w] = 1; stack.push(i - w); }
     }
-    if (!best || pts.length > best.length) best = pts;
+    regions.push(pts);
   }
-  if (!best || best.length < w * h * 0.08 || best.length > w * h * 0.97) return null;
+  regions.sort((a, b) => b.length - a.length);
+  if (!regions.length || regions[0].length < w * h * 0.06) return null;
+  const keep = regions.filter(p => p.length >= Math.max(regions[0].length * 0.05, w * h * 0.004));
+  const total = keep.reduce((s, p) => s + p.length, 0);
+  if (total > w * h * 0.97) return null;
 
-  // Extreme points: top-left has the smallest x+y, bottom-right the largest, and so on.
-  let tl, tr, br, bl;
-  for (const i of best) {
+  // 3. corners: biggest quadrilateral inside the convex outline
+  const points = [];
+  for (const pts of keep) for (const i of pts) {
     const x = i % w, y = (i - x) / w;
-    if (!tl || x + y < tl[0] + tl[1]) tl = [x, y];
-    if (!br || x + y > br[0] + br[1]) br = [x, y];
-    if (!tr || x - y > tr[0] - tr[1]) tr = [x, y];
-    if (!bl || x - y < bl[0] - bl[1]) bl = [x, y];
+    // only outline pixels matter for the hull
+    if (x === 0 || y === 0 || x === w - 1 || y === h - 1 || !mask[i - 1] || !mask[i + 1] || !mask[i - w] || !mask[i + w]) points.push([x + 0.5, y + 0.5]);
   }
-  const back = ([x, y], dx, dy) => [Math.min(img.width, Math.max(0, (x + dx) / scale)), Math.min(img.height, Math.max(0, (y + dy) / scale))];
-  return [back(tl, 0, 0), back(tr, 1, 0), back(br, 1, 1), back(bl, 0, 1)];
+  const quad = biggestQuad(convexHull(points));
+  if (!quad || area4(quad) < w * h * 0.05) return null;
+  return orderCorners(quad).map(([x, y]) => [
+    Math.min(img.width, Math.max(0, x / scale)),
+    Math.min(img.height, Math.max(0, y / scale)),
+  ]);
 }

@@ -18,7 +18,7 @@ export function openAdd(ctx) {
   const s = sheet(h('div', {},
     segmented([['search', '書名で探す'], ['isbn', 'ISBNで登録'], ['manual', '手で入れる']], 'search', v => show(v)),
     h('div', { style: { height: '8px' } }),
-    body), { title: '本を追加' });
+    body), { title: '本を追加', thumbClose: true });
 
   const options = () => h('div', {},
     h('div', { class: 'section-title' }, '紙か電子か'),

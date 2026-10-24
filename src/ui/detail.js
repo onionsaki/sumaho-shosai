@@ -20,7 +20,7 @@ export async function openDetail(bookId, ctx) {
   let tags = await db.allTags();
   let changed = false;
   const content = h('div');
-  const s = sheet(content, { title: '本の詳細' });
+  const s = sheet(content, { title: '本の詳細', thumbClose: true });
   s.onClose(() => { off(); if (changed) ctx.refresh(); });
 
   // Apply a patch to the latest saved copy so background lookups are never overwritten.
@@ -193,7 +193,7 @@ export async function openDetail(bookId, ctx) {
         editSheet.close();
         render();
       } }, '保存する'));
-    const editSheet = sheet(form, { title: '情報を直す' });
+    const editSheet = sheet(form, { title: '情報を直す', thumbClose: true });
     editSheet.setAction('保存', () => form.querySelector('.btn.primary').click());
   }
 

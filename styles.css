@@ -378,3 +378,8 @@ label.field input, label.field select { font-size: 16px; }
 }
 .crop-handle::after { content: ''; position: absolute; inset: -12px; } /* bigger touch target */
 .crop-handle.on { transform: scale(1.25); background: var(--accent); }
+
+/* Close button within thumb reach (bottom right) on the long sheets */
+.thumb-close { position: absolute; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 58px; height: 58px; z-index: 2; box-shadow: 0 6px 16px rgba(0,0,0,.22), var(--raise-sm); }
+.thumb-close .icon { width: 26px; height: 26px; }
+.sheet.has-thumb .sheet-body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
