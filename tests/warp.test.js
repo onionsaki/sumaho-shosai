@@ -136,3 +136,11 @@ test('detectQuad finds a book turned about 30 degrees', () => {
   const corners = [[95, 30], [215, 100], [150, 280], [25, 205]];
   assertCorners(detectQuad(scene({ corners, bg: blueCloth, cover: (x, y, r) => [240 - r() * 20, 230 - r() * 20, 210] })), corners, 10);
 });
+
+// From real photos (2026-10-25): pale pink cover on a grey quilt with a shadow in one corner of the frame.
+test('detectQuad keeps a pale cover and ignores a shadow on grey cloth', () => {
+  const corners = [[55, 40], [190, 36], [200, 250], [45, 262]];
+  const bg = (x, y, r) => { const shade = x > 170 && y > 230 ? 0.62 : 1; return [192 * shade + r() * 14, 197 * shade + r() * 14, 194 * shade + r() * 14]; };
+  const cover = (x, y, r) => ((x * 7 + y * 3) % 97 < 8 ? [40, 30, 30] : [238 - r() * 8, 182 - r() * 8, 192 - r() * 8]);
+  assertCorners(detectQuad(scene({ corners, bg, cover })), corners, 10);
+});

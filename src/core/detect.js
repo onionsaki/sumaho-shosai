@@ -24,6 +24,26 @@ function fitPlane(samples, c) {
   return [col(0), col(1), col(2)];
 }
 
+// Otsu's threshold over values 0..255+ (clamped), maximising the between-group variance.
+function otsu(values) {
+  const bins = new Float64Array(256);
+  for (const v of values) bins[Math.min(255, Math.max(0, Math.round(v)))]++;
+  const total = values.length;
+  let sum = 0;
+  for (let i = 0; i < 256; i++) sum += i * bins[i];
+  let wB = 0, sumB = 0, best = 0, cut = 0;
+  for (let t = 0; t < 256; t++) {
+    wB += bins[t];
+    if (!wB) continue;
+    const wF = total - wB;
+    if (!wF) break;
+    sumB += t * bins[t];
+    const between = wB * wF * (sumB / wB - (sum - sumB) / wF) ** 2;
+    if (between > best) { best = between; cut = t; }
+  }
+  return cut;
+}
+
 function convexHull(points) {
   const pts = [...points].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
   const cross = (o, a, b) => (a[0] - o[0]) * (b[1] - o[1]) - (a[1] - o[1]) * (b[0] - o[0]);
@@ -97,18 +117,36 @@ export function detectQuad(img) {
   for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
     if (x < band || y < band || x >= w - band || y >= h - band) border.push([x, y, px(x, y)]);
   }
-  const planes = [0, 1, 2].map(c => fitPlane(border, c));
-  const expected = (x, y) => planes.map(([a, b, d]) => a + b * x + d * y);
-  const resid = border.map(([x, y, p]) => { const e = expected(x, y); return Math.hypot(p[0] - e[0], p[1] - e[1], p[2] - e[2]); });
-  const sorted = [...resid].sort((a, b) => a - b);
-  const typical = sorted[Math.floor(sorted.length * 0.8)] ?? 0; // most of the edge band, ignoring a book that touches it
-  const limit = Math.max(40, typical * 1.8);
+  // How far a colour is from the background there: plain colour distance, plus extra weight on
+  // saturation, so a pale pink cover stands out from grey cloth (real photo, 2026-10-25).
+  // A shadow on the cloth only gets darker without changing hue, so going darker counts for less.
+  const sat = p => Math.max(p[0], p[1], p[2]) - Math.min(p[0], p[1], p[2]);
+  const diff = (p, e) => {
+    const lp = (p[0] + p[1] + p[2]) / 3, le = (e[0] + e[1] + e[2]) / 3;
+    const dc = Math.hypot(p[0] - lp - (e[0] - le), p[1] - lp - (e[1] - le), p[2] - lp - (e[2] - le));
+    const dl = lp >= le ? lp - le : (le - lp) * 0.45;
+    return Math.hypot(dc * 1.4, dl) + 1.5 * Math.abs(sat(p) - sat(e));
+  };
+  const median = arr => { const s = [...arr].sort((a, b) => a - b); return s[Math.floor(s.length / 2)] ?? 0; };
+  // Fit twice: the second fit leaves out things lying in the edge band (a plug, a hand, a corner of the book).
+  let planes = [0, 1, 2].map(c => fitPlane(border, c));
+  let expected = (x, y) => planes.map(([a, b, d]) => a + b * x + d * y);
+  const first = border.map(([x, y, p]) => diff(p, expected(x, y)));
+  const cut = Math.max(12, median(first) * 2.5);
+  const clean = border.filter((_, i) => first[i] <= cut);
+  if (clean.length > border.length * 0.3) {
+    planes = [0, 1, 2].map(c => fitPlane(clean, c));
+    expected = (x, y) => planes.map(([a, b, d]) => a + b * x + d * y);
+  }
+  const typical = median(clean.map(([x, y, p]) => diff(p, expected(x, y))));
+  const dmap = new Float32Array(w * h);
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) dmap[y * w + x] = diff(px(x, y), expected(x, y));
+  // The cut between "cloth" and "book" is read from this photo (Otsu: the split that best separates two groups),
+  // never below what the cloth's own texture reaches.
+  const limit = Math.max(26, typical * 2.5, otsu(dmap));
 
   let mask = new Uint8Array(w * h);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
-    const p = px(x, y), e = expected(x, y);
-    mask[y * w + x] = Math.hypot(p[0] - e[0], p[1] - e[1], p[2] - e[2]) > limit ? 1 : 0;
-  }
+  for (let i = 0; i < w * h; i++) mask[i] = dmap[i] > limit ? 1 : 0;
 
   // 2. close small gaps (dilate then erode) so a cover split by cloth-coloured stripes joins up
   const r = Math.max(1, Math.round(Math.min(w, h) * 0.035));
@@ -128,7 +166,8 @@ export function detectQuad(img) {
     return out;
   };
   const morph = (src, grow) => pass(pass(src, grow, true), grow, false);
-  mask = morph(morph(mask, true), false);
+  mask = morph(morph(mask, true), false); // close: join pieces of the cover
+  mask = morph(morph(mask, false), true); // open: drop thin streaks (shine on a quilt, folds, a cable)
 
   // keep the largest region plus any other sizeable piece (a cover can still come apart in places)
   const seen = new Uint8Array(w * h);
@@ -150,7 +189,7 @@ export function detectQuad(img) {
   }
   regions.sort((a, b) => b.length - a.length);
   if (!regions.length || regions[0].length < w * h * 0.06) return null;
-  const keep = regions.filter(p => p.length >= Math.max(regions[0].length * 0.05, w * h * 0.004));
+  const keep = regions.filter(p => p.length >= Math.max(regions[0].length * 0.25, w * h * 0.004));
   const total = keep.reduce((s, p) => s + p.length, 0);
   if (total > w * h * 0.97) return null;
 
