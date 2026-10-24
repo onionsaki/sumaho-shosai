@@ -186,6 +186,7 @@ export function mount(container, ctx) {
 
   let currentRows = [];
   let currentBooks = [];
+  let drawn = 0;
   function renderList() {
     if (!currentRows.length) {
       fill(list, h('li', { class: 'empty' }, icon('books'), h('p', {}, books.length ? 'この条件の本はありません' : '本棚は空です'),
@@ -194,6 +195,15 @@ export function mount(container, ctx) {
       return;
     }
     fill(list, ...currentRows.slice(0, shown).map(r => r.el()));
+    drawn = Math.min(shown, currentRows.length);
+    more.textContent = currentRows.length > shown ? 'さらに読み込み中…' : '';
+  }
+
+  // Scrolling further adds the next page under the list; the rows already drawn stay as they are.
+  function appendMore() {
+    const next = currentRows.slice(drawn, shown);
+    list.append(...next.map(r => r.el()));
+    drawn += next.length;
     more.textContent = currentRows.length > shown ? 'さらに読み込み中…' : '';
   }
 
@@ -211,7 +221,7 @@ export function mount(container, ctx) {
   }
 
   const io = new IntersectionObserver(entries => {
-    if (entries.some(e => e.isIntersecting) && currentRows.length > shown) { shown += PAGE; renderList(); }
+    if (entries.some(e => e.isIntersecting) && currentRows.length > shown) { shown += PAGE; appendMore(); }
   });
   io.observe(more);
 
@@ -228,9 +238,12 @@ export function mount(container, ctx) {
   }
 
   let reloadTimer = null;
-  const off = lookup.onUpdate(() => {
+  // Background lookups finish one book at a time: swap that book in memory instead of reloading every book.
+  const off = lookup.onUpdate(updated => {
+    const i = books.findIndex(b => b.id === updated.id);
+    if (i >= 0) books[i] = updated; else books.push(updated);
     clearTimeout(reloadTimer);
-    reloadTimer = setTimeout(load, 500);
+    reloadTimer = setTimeout(() => { if (!disposed) render(); }, 800);
   });
 
   const filterBtn = h('button', { class: 'round-btn', 'aria-label': '絞り込み', onClick: openFilterSheet }, icon('filter'));

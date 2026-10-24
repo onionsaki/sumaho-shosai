@@ -363,3 +363,6 @@ label.field input, label.field select { font-size: 16px; }
 .state-line input[type="date"] { font-size: 15px; }
 .tabbar a { font-size: 10.5px; letter-spacing: .08em; }
 .toast { font-size: 14px; }
+
+/* Long shelves (thousands of books): rows off screen are skipped by the browser until scrolled near. */
+.book-row { content-visibility: auto; contain-intrinsic-size: auto 86px; }
