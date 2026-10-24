@@ -1,0 +1,65 @@
+// Service worker: cache-first app shell so the app opens without a signal (spec §7).
+// Bump VERSION and keep APP_FILES complete whenever a loaded file is added or changed.
+
+const VERSION = '1';
+const CACHE = `sumaho-shosai-v${VERSION}`;
+const APP_FILES = [
+  './',
+  'index.html',
+  'styles.css',
+  'manifest.webmanifest',
+  'icons/icon-192.png',
+  'icons/icon-512.png',
+  'src/app.js',
+  'src/db.js',
+  'src/lookup.js',
+  'src/ui/dom.js',
+  'src/ui/scan.js',
+  'src/ui/shelf.js',
+  'src/ui/settings.js',
+  'src/ui/detail.js',
+  'src/ui/add.js',
+  'src/core/model.js',
+  'src/core/isbn.js',
+  'src/core/normalize.js',
+  'src/core/volume.js',
+  'src/core/ndl.js',
+  'src/core/openbd.js',
+  'src/core/merge.js',
+  'src/core/confirm.js',
+  'src/core/session.js',
+  'src/core/check.js',
+  'src/core/series.js',
+  'src/core/search.js',
+  'src/core/stale.js',
+  'src/core/stats.js',
+  'src/core/csv.js',
+  'src/core/backup.js',
+];
+
+self.addEventListener('install', event => {
+  event.waitUntil(caches.open(CACHE).then(cache => cache.addAll(APP_FILES)).then(() => self.skipWaiting()));
+});
+
+self.addEventListener('activate', event => {
+  event.waitUntil((async () => {
+    for (const key of await caches.keys()) if (key !== CACHE) await caches.delete(key);
+    await self.clients.claim();
+  })());
+});
+
+self.addEventListener('fetch', event => {
+  const { request } = event;
+  const url = new URL(request.url);
+  if (request.method !== 'GET' || url.origin !== self.location.origin) return;
+  event.respondWith((async () => {
+    const cached = await caches.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+    try {
+      return await fetch(request);
+    } catch (err) {
+      if (request.mode === 'navigate') return caches.match('index.html');
+      throw err;
+    }
+  })());
+});

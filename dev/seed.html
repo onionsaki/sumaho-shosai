@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スマホ書斎 開発用データ</title>
+<link rel="stylesheet" href="../styles.css">
+</head>
+<body>
+<main class="view">
+  <h2>開発用のテストデータ</h2>
+  <p class="muted">localhost でだけ動きます。本物のデータには使いません。</p>
+  <div class="row-buttons">
+    <button class="btn" id="sample">サンプル30冊を入れる</button>
+    <button class="btn" id="many">3000冊を入れる</button>
+    <button class="btn danger" id="clear">本を全部消す</button>
+  </div>
+  <p id="out"></p>
+</main>
+<script type="module">
+import { openDb } from '../src/db.js';
+import { parseCsv, rowsToBooks } from '../src/core/csv.js';
+import { newBook } from '../src/core/model.js';
+import { workKeyOf } from '../src/core/volume.js';
+
+const out = document.getElementById('out');
+if (location.hostname !== 'localhost') {
+  document.querySelectorAll('button').forEach(b => { b.disabled = true; });
+  out.textContent = 'localhost 以外では使えません。';
+} else {
+  const db = await openDb();
+  const count = async () => { out.textContent = `いまの登録：${(await db.allBooks()).length}冊`; };
+  document.getElementById('sample').onclick = async () => {
+    const text = await (await fetch('../tests/fixtures/sample-books.csv')).text();
+    const items = rowsToBooks(parseCsv(text));
+    for (const item of items) {
+      for (const name of item.tagNames) item.book.tagIds.push((await db.createTag(name)).id);
+    }
+    const r = await db.addBooksSkippingDuplicates(items.map(i => i.book));
+    out.textContent = `追加 ${r.added}冊、重複 ${r.skipped}冊`;
+  };
+  document.getElementById('many').onclick = async () => {
+    const kana = 'アイウエオカキクケコサシスセソタチツテトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワ';
+    const books = [];
+    for (let w = 0; w < 300; w++) {
+      const title = `テスト作品${w}`;
+      const titleKana = kana[w % kana.length] + kana[(w * 7) % kana.length] + 'テスト';
+      for (let v = 1; v <= 10; v++) {
+        books.push(newBook({ title: `${title} ${v}`, titleKana, workTitle: title, volume: v, authors: [`作者${w}`], workKey: workKeyOf(title, [`作者${w}`]), lookup: 'manual' }));
+      }
+    }
+    const r = await db.addBooksSkippingDuplicates(books);
+    out.textContent = `追加 ${r.added}冊`;
+  };
+  document.getElementById('clear').onclick = async () => {
+    await db.replaceAll({ books: [], tags: await db.allTags(), settings: await db.allSettings() });
+    await count();
+  };
+  await count();
+}
+</script>
+</body>
+</html>
