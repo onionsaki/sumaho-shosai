@@ -5,6 +5,7 @@ import { booksToCsv, csvFileName, parseCsv, rowsToBooks } from '../core/csv.js';
 import { makeBackup, validateBackup, backupFileName } from '../core/backup.js';
 import { ownedPriceSum, countOwned } from '../core/stats.js';
 import { todayStr } from '../core/model.js';
+import { THEMES, applyTheme } from './theme.js';
 
 const readFile = file => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -25,8 +26,9 @@ export function mount(container, ctx) {
   let openTagsOnRender = false; // keep タグの整理 open after editing a tag
 
   async function render() {
-    const [books, tags, examTagId, staleYears, lastBackupAt] = await Promise.all([
+    const [books, tags, examTagId, staleYears, lastBackupAt, theme, rakutenAppId, rakutenAccessKey] = await Promise.all([
       db.allBooks(), db.allTags(), db.getSetting('examTagId'), db.getSetting('staleYears'), db.getSetting('lastBackupAt'),
+      db.getSetting('theme'), db.getSetting('rakutenAppId'), db.getSetting('rakutenAccessKey'),
     ]);
     let persisted = null;
     try { persisted = await navigator.storage?.persisted?.(); } catch { persisted = null; }
@@ -135,7 +137,40 @@ export function mount(container, ctx) {
       setTimeout(() => location.reload(), 600);
     });
 
+    // --- colour pattern ---
+    const current = applyTheme(theme);
+    const SWATCH = { green: '#2f5d50', white: '#f4f5f6', black: '#1f2326', blue: '#5486bd' };
+    const themePick = h('div', { class: 'theme-pick' }, THEMES.map(([v, label]) => h('button', {
+      class: v === current ? 'on' : '', onClick: async () => { await db.setSetting('theme', v); applyTheme(v); render(); },
+    }, h('span', { class: 'swatch', style: { background: SWATCH[v] } }), label)));
+
+    // --- Rakuten covers (keys stay on this phone) ---
+    const appIdInput = h('input', { type: 'text', value: rakutenAppId ?? '', autocomplete: 'off', spellcheck: false });
+    const keyInput = h('input', { type: 'text', value: rakutenAccessKey ?? '', autocomplete: 'off', spellcheck: false });
+    const noCover = books.filter(b => b.isbn && !b.coverUrl);
+    let filling = false;
+    const fillBtn = h('button', { class: 'btn wide', style: { marginTop: '10px' }, disabled: !(rakutenAppId && rakutenAccessKey) || !noCover.length, onClick: async () => {
+      if (filling) return;
+      filling = true;
+      let added = 0;
+      for (const [i, b] of noCover.entries()) {
+        if (disposed) break;
+        fillBtn.textContent = `表紙を探しています… ${i + 1} / ${noCover.length}`;
+        if (await lookup.fillCover(b.id)) added++;
+      }
+      filling = false;
+      toast(`表紙を ${added}冊 に付けました${noCover.length - added ? `（${noCover.length - added}冊は見つかりませんでした）` : ''}`);
+      render();
+    } }, `表紙のない本に表紙を付ける（${noCover.length}冊・約${Math.max(1, Math.ceil(noCover.length / 60))}分）`);
+
     fill(container, 
+      h('div', { class: 'card', style: { marginTop: '6px' } },
+        h('div', { class: 'about-name' }, '自宅の書斎をスマホに入れよう'),
+        h('div', { class: 'muted small' }, '略して「スマホ書斎」。持っている本とマンガの棚卸し帳')),
+
+      h('div', { class: 'section-title' }, '色'),
+      themePick,
+
       h('div', { class: 'section-title' }, '情報'),
       h('div', { class: 'card' },
         h('div', { class: 'stat' }, h('span', {}, '持っている本'), h('span', {}, `${countOwned(books).toLocaleString()}冊`)),
@@ -166,6 +201,19 @@ export function mount(container, ctx) {
         h('p', { class: 'muted small' }, '取り込みはスマホ書斎で書き出したCSVの形に限ります。今の本棚に追加され、同じISBNの本は飛ばします。'),
         csvInput),
 
+      h('div', { class: 'section-title' }, '本の表紙（楽天ブックス）'),
+      h('div', { class: 'card' },
+        h('p', { class: 'muted small', style: { marginTop: 0 } }, '楽天ウェブサービスで作ったアプリIDとアクセスキーを入れると、表紙が出ない本を楽天から探します。キーはこのスマホの中だけに保存します。'),
+        h('label', { class: 'field' }, h('span', {}, 'アプリID'), appIdInput),
+        h('label', { class: 'field' }, h('span', {}, 'アクセスキー'), keyInput),
+        h('button', { class: 'btn primary wide', onClick: async () => {
+          await db.setSetting('rakutenAppId', appIdInput.value.trim());
+          await db.setSetting('rakutenAccessKey', keyInput.value.trim());
+          toast(appIdInput.value.trim() && keyInput.value.trim() ? '保存しました。これから登録する本の表紙も楽天から探します' : '楽天を使わない設定にしました');
+          render();
+        } }, '保存する'),
+        fillBtn),
+
       h('div', { class: 'section-title' }, '古い参考書の判定'),
       h('div', { class: 'card' },
         h('label', { class: 'field' }, h('span', {}, '対象のタグ'), examSelect),
@@ -177,7 +225,7 @@ export function mount(container, ctx) {
         tagRows),
 
       h('p', { class: 'muted small', style: { marginTop: '24px' } },
-        '本の情報は、国立国会図書館サーチのAPIと openBD を利用して取得しています。'),
+        '本の情報は、国立国会図書館サーチのAPIと openBD を利用して取得しています。', rakutenAppId ? ' 表紙の一部は楽天ブックスから取得しています（Supported by Rakuten Developers）。' : ''),
     );
   }
 

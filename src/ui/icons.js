@@ -1,25 +1,26 @@
-// Line icons drawn inline (no icon font, works offline). Stroke follows currentColor.
+// Line icons from Lucide (lucide-static 0.460.0, ISC license, https://lucide.dev), inlined so they work offline.
+// 鬼さん 2026-10-24: the hand-drawn ones looked uneven.
 
 const PATHS = {
-  barcode: '<path d="M4 5v14M7 5v14M10 5v14M12.5 5v14M15 5v14M18 5v14M20 5v14" stroke-width="1.6"/>',
-  plus: '<path d="M12 5v14M5 12h14"/>',
-  search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4 4"/>',
-  tag: '<path d="M3.5 12.2V4.5a1 1 0 0 1 1-1h7.7l8.3 8.3a1.4 1.4 0 0 1 0 2l-6.7 6.7a1.4 1.4 0 0 1-2 0z"/><circle cx="8" cy="8" r="1.6"/>',
-  books: '<rect x="4" y="4" width="4.5" height="16" rx="1.2"/><rect x="9.5" y="4" width="4.5" height="16" rx="1.2"/><path d="M15.5 5.2l3.6-1 3 15.4-3.6 1z"/>',
-  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.8l2 .4.6 2.3 1.9 1.1 2.3-.7 1.4 1.5-.7 2.3 1.1 1.9 2.3.6v2l-2.3.6-1.1 1.9.7 2.3-1.4 1.5-2.3-.7-1.9 1.1-.6 2.3-2 .4-2-.4-.6-2.3-1.9-1.1-2.3.7-1.4-1.5.7-2.3-1.1-1.9L1.4 13v-2l2.3-.6 1.1-1.9-.7-2.3L5.5 4.7l2.3.7 1.9-1.1.6-2.3z" stroke-linejoin="round"/>',
-  close: '<path d="M6 6l12 12M18 6L6 18"/>',
-  back: '<path d="M19 12H5M11 6l-6 6 6 6"/>',
-  open: '<path d="M2.5 5.5c3-1 6.5-1 9.5 1v13c-3-2-6.5-2-9.5-1zM21.5 5.5c-3-1-6.5-1-9.5 1v13c3-2 6.5-2 9.5-1z" stroke-linejoin="round"/>',
-  calendar: '<rect x="3.5" y="5" width="17" height="15.5" rx="2.5"/><path d="M3.5 10h17M8 3v4M16 3v4"/>',
-  check: '<circle cx="12" cy="12" r="9"/><path d="M8 12.5l2.8 2.8L16.5 9.5"/>',
-  shop: '<path d="M4 9h16l-1.2 10.5a1.5 1.5 0 0 1-1.5 1.3H6.7a1.5 1.5 0 0 1-1.5-1.3zM8.5 9V7a3.5 3.5 0 0 1 7 0v2"/>',
-  pencil: '<path d="M4 20l1-4.5L16 4.5a2 2 0 0 1 3 0l.5.5a2 2 0 0 1 0 3L8.5 19z M14 6.5l3.5 3.5" stroke-linejoin="round"/>',
+  barcode: '<path d="M3 7V5a2 2 0 0 1 2-2h2"/><path d="M17 3h2a2 2 0 0 1 2 2v2"/><path d="M21 17v2a2 2 0 0 1-2 2h-2"/><path d="M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M8 7v10"/><path d="M12 7v10"/><path d="M17 7v10"/>',
+  plus: '<path d="M5 12h14"/><path d="M12 5v14"/>',
+  search: '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+  tag: '<path d="M12.586 2.586A2 2 0 0 0 11.172 2H4a2 2 0 0 0-2 2v7.172a2 2 0 0 0 .586 1.414l8.704 8.704a2.426 2.426 0 0 0 3.42 0l6.58-6.58a2.426 2.426 0 0 0 0-3.42z"/><circle cx="7.5" cy="7.5" r=".5" fill="currentColor"/>',
+  books: '<rect width="8" height="18" x="3" y="3" rx="1"/><path d="M7 3v18"/><path d="M20.4 18.9c.2.5-.1 1.1-.6 1.3l-1.9.7c-.5.2-1.1-.1-1.3-.6L11.1 5.1c-.2-.5.1-1.1.6-1.3l1.9-.7c.5-.2 1.1.1 1.3.6Z"/>',
+  gear: '<path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/>',
+  close: '<path d="M18 6 6 18"/><path d="m6 6 12 12"/>',
+  back: '<path d="m12 19-7-7 7-7"/><path d="M19 12H5"/>',
+  open: '<path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/>',
+  calendar: '<path d="M8 2v4"/><path d="M16 2v4"/><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M3 10h18"/><path d="M8 14h.01"/><path d="M12 14h.01"/><path d="M16 14h.01"/><path d="M8 18h.01"/><path d="M12 18h.01"/><path d="M16 18h.01"/>',
+  check: '<path d="M20 6 9 17l-5-5"/>',
 };
 
 export function icon(name, cls = '') {
   const span = document.createElement('span');
   span.className = `icon ${cls}`.trim();
   span.setAttribute('aria-hidden', 'true');
-  span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round">${PATHS[name] ?? ''}</svg>`;
+  span.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${PATHS[name] ?? ''}</svg>`;
   return span;
 }
+
+export const iconSvg = name => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">${PATHS[name] ?? ''}</svg>`;

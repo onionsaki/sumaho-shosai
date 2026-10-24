@@ -4,6 +4,7 @@
 import { ndlIsbnUrl, ndlTitleSearchUrl, parseNdlOpenSearch, pickBestNdlItem } from './core/ndl.js';
 import { openBdUrl, parseOpenBd } from './core/openbd.js';
 import { mergeBookInfo } from './core/merge.js';
+import { rakutenIsbnUrl, parseRakutenCover } from './core/rakuten.js';
 import { newBook } from './core/model.js';
 
 class RetryableError extends Error {}
@@ -21,6 +22,7 @@ export function createLookupQueue({
   sleep = ms => new Promise(r => setTimeout(r, ms)),
   now = () => Date.now(),
   isOnline = () => navigator.onLine,
+  getRakutenKeys = async () => null, // {appId, accessKey} once 鬼さん has registered
 }) {
   const queue = [];
   const queued = new Map(); // id -> overwrite flag
@@ -85,6 +87,22 @@ export function createLookupQueue({
     }
   }
 
+  // Covers only; any failure just leaves the cover empty.
+  let lastRakutenAt = -Infinity;
+  async function rakutenCover(isbn) {
+    const keys = await getRakutenKeys();
+    if (!keys?.appId || !keys?.accessKey) return '';
+    const wait = minIntervalMs - (now() - lastRakutenAt); // Rakuten allows about one request a second
+    if (wait > 0) await sleep(wait);
+    lastRakutenAt = now();
+    try {
+      const res = await fetchText(rakutenIsbnUrl(isbn, keys));
+      return res.status === 200 ? parseRakutenCover(JSON.parse(res.text)) : '';
+    } catch {
+      return '';
+    }
+  }
+
   async function lookupIsbn(isbn) {
     const text = await ndlFetch(ndlIsbnUrl(isbn));
     const ndl = text ? pickBestNdlItem(parseNdlOpenSearch(text, DOMParserImpl)) : null;
@@ -103,7 +121,9 @@ export function createLookupQueue({
     }
     const latest = await db.getBook(id); // keep edits made while waiting
     if (!latest) return;
-    const saved = await db.putBook(mergeBookInfo(latest, result.ndl, result.openbd, { overwrite }));
+    const merged = mergeBookInfo(latest, result.ndl, result.openbd, { overwrite });
+    if (!merged.coverUrl && merged.lookup === 'ok') merged.coverUrl = await rakutenCover(book.isbn);
+    const saved = await db.putBook(merged);
     for (const cb of listeners) cb(saved);
   }
 
@@ -150,7 +170,9 @@ export function createLookupQueue({
       try {
         const { ndl, openbd } = await lookupIsbn(isbn);
         const merged = mergeBookInfo(newBook({ isbn }), ndl, openbd);
-        return merged.lookup === 'ok' ? merged : null;
+        if (merged.lookup !== 'ok') return null;
+        if (!merged.coverUrl) merged.coverUrl = await rakutenCover(isbn);
+        return merged;
       } catch {
         return null;
       }
@@ -171,6 +193,19 @@ export function createLookupQueue({
       }
       return [...[...byIsbn.values()].map(pickBestNdlItem), ...singles];
     },
+    // Adds a Rakuten cover to a saved book that has none. Returns true when one was added.
+    async fillCover(id) {
+      const book = await db.getBook(id);
+      if (!book?.isbn || book.coverUrl || !isOnline()) return false;
+      const url = await rakutenCover(book.isbn);
+      if (!url) return false;
+      const latest = await db.getBook(id);
+      if (!latest || latest.coverUrl) return false;
+      const saved = await db.putBook({ ...latest, coverUrl: url });
+      for (const cb of listeners) cb(saved);
+      return true;
+    },
+    hasRakuten: async () => Boolean((await getRakutenKeys())?.appId),
     onUpdate(cb) {
       listeners.add(cb);
       return () => listeners.delete(cb);

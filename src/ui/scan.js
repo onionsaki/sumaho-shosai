@@ -205,11 +205,20 @@ export function mount(container, ctx) {
     const statusEl = h('div', { class: 'status-line' });
     let running = false;
     const cameraSlot = h('div');
+    // 鬼さん 2026-10-24: a way to close the camera and the answer once it is known.
+    const closeCamera = h('button', { class: 'btn wide', style: { marginTop: '12px' }, onClick: async () => {
+      await stop();
+      running = false;
+      statusEl.textContent = '';
+      fill(card);
+      fill(cameraSlot, startTile);
+    } }, 'カメラを閉じる');
     const startTile = h('button', { class: 'tile', onClick: async () => {
       if (running) return;
       fill(cameraSlot, h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })));
       running = await start(video, handle, statusEl);
-      if (!running) fill(cameraSlot, startTile);
+      if (running) cameraSlot.append(closeCamera);
+      else fill(cameraSlot, startTile);
     } }, h('div', {}, '本屋で確認'), icon('barcode'), h('div', { class: 'sub' }, '持っているかを確かめます。何も保存しません'));
     fill(cameraSlot, startTile);
 
@@ -258,6 +267,7 @@ export function mount(container, ctx) {
       const noteEl = h('div', { class: 'small' }, note);
       const extra = h('div');
       fill(card, h('div', { class: `result-card ${r.status}` },
+        h('button', { class: 'round-btn card-close', 'aria-label': '答えを閉じる', onClick: () => { enrichToken++; fill(card); } }, icon('close')),
         h('div', { class: 'big' }, big), titleEl, noteEl, ...workLines(book, r.work), extra));
 
       if (r.status !== 'unregistered') return;

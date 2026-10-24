@@ -229,3 +229,41 @@ test('only one NDL request is in flight across the queue, fetchInfo and title se
   await Promise.all([q.fetchInfo('9784088725093'), q.searchByTitle('x', ''), q.idle()]);
   assert.equal(max, 1);
 });
+
+test('takes the cover from Rakuten when openBD has none and keys are set', async () => {
+  const db = await fresh();
+  const book = await db.putBook(newBook({ isbn: '9784763135476', lookup: 'pending' }));
+  const fetchImpl = fakeFetch([
+    ['ndlsearch', { status: 200, body: fixture('ndl-9784763135476.xml') }],
+    ['openbd', { status: 200, body: '[null]' }],
+    ['openapi.rakuten', { status: 200, body: '{"Items":[{"largeImageUrl":"https://thumbnail.image.rakuten.co.jp/r.jpg"}]}' }],
+  ]);
+  const q = make(db, fetchImpl, fakeClock(), { getRakutenKeys: async () => ({ appId: 'A', accessKey: 'K' }) });
+  q.enqueue(book.id);
+  await q.idle();
+  assert.equal((await db.getBook(book.id)).coverUrl, 'https://thumbnail.image.rakuten.co.jp/r.jpg');
+});
+
+test('never asks Rakuten without keys', async () => {
+  const db = await fresh();
+  const book = await db.putBook(newBook({ isbn: '9784763135476', lookup: 'pending' }));
+  const fetchImpl = fakeFetch([
+    ['ndlsearch', { status: 200, body: fixture('ndl-9784763135476.xml') }],
+    ['openbd', { status: 200, body: '[null]' }],
+  ]);
+  const q = make(db, fetchImpl, fakeClock());
+  q.enqueue(book.id);
+  await q.idle();
+  assert.ok(!fetchImpl.calls.some(u => u.includes('rakuten')));
+  assert.equal((await db.getBook(book.id)).coverUrl, '');
+});
+
+test('fillCover adds a Rakuten cover to a book that has none', async () => {
+  const db = await fresh();
+  const book = await db.putBook(newBook({ isbn: '9784763135476', title: 't', lookup: 'ok' }));
+  const fetchImpl = fakeFetch([['openapi.rakuten', { status: 200, body: '{"Items":[{"largeImageUrl":"https://r/x.jpg"}]}' }]]);
+  const q = make(db, fetchImpl, fakeClock(), { getRakutenKeys: async () => ({ appId: 'A', accessKey: 'K' }) });
+  assert.equal(await q.fillCover(book.id), true);
+  assert.equal((await db.getBook(book.id)).coverUrl, 'https://r/x.jpg');
+  assert.equal((await db.getBook(book.id)).title, 't');
+});

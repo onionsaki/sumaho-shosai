@@ -3,6 +3,7 @@
 import { openDb } from './db.js';
 import { createLookupQueue } from './lookup.js';
 import { toast } from './ui/dom.js';
+import { applyTheme } from './ui/theme.js';
 
 const TABS = {
   scan: () => import('./ui/scan.js'),
@@ -33,7 +34,15 @@ async function mountTab(ctx) {
 async function boot() {
   const db = await openDb();
   try { await navigator.storage?.persist?.(); } catch { /* not critical */ }
-  const lookup = createLookupQueue({ db });
+  applyTheme(await db.getSetting('theme'));
+  const lookup = createLookupQueue({
+    db,
+    getRakutenKeys: async () => {
+      const appId = await db.getSetting('rakutenAppId');
+      const accessKey = await db.getSetting('rakutenAccessKey');
+      return appId && accessKey ? { appId, accessKey } : null;
+    },
+  });
 
   const ctx = {
     db,
