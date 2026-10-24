@@ -1,8 +1,9 @@
-// Take or choose a photo and shrink it before it is stored with the book (鬼さん 2026-10-25:
-// covers for books without a barcode, and a record of a book before it is given away).
+// Take or choose a photo, then cut the book out of it before it is stored (鬼さん 2026-10-25:
+// covers for books without a barcode, a record of a book before it is given away, and Lens-style cut-out).
 
-const MAX_SIDE = 640;
-const QUALITY = 0.8;
+import { openCrop } from './crop.js';
+
+const WORK_SIDE = 1600; // enough detail to straighten; the stored picture is shrunk to 640px in crop.js
 
 export function pickPhoto() {
   return new Promise(resolve => {
@@ -12,19 +13,24 @@ export function pickPhoto() {
     input.setAttribute('capture', 'environment');
     input.addEventListener('change', async () => {
       const file = input.files?.[0];
-      resolve(file ? await shrink(file).catch(() => null) : null);
+      if (!file) { resolve(null); return; }
+      try {
+        resolve(await openCrop(await toCanvas(file)));
+      } catch {
+        resolve(null);
+      }
     });
     input.click();
   });
 }
 
-async function shrink(file) {
+async function toCanvas(file) {
   const bitmap = await createImageBitmap(file);
-  const scale = Math.min(1, MAX_SIDE / Math.max(bitmap.width, bitmap.height));
+  const scale = Math.min(1, WORK_SIDE / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bitmap.width * scale);
   canvas.height = Math.round(bitmap.height * scale);
   canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height);
   bitmap.close?.();
-  return canvas.toDataURL('image/jpeg', QUALITY);
+  return canvas;
 }
