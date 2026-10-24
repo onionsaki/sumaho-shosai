@@ -4,7 +4,8 @@
 import { ndlIsbnUrl, ndlTitleSearchUrl, parseNdlOpenSearch, pickBestNdlItem } from './core/ndl.js';
 import { openBdUrl, parseOpenBd } from './core/openbd.js';
 import { mergeBookInfo } from './core/merge.js';
-import { rakutenIsbnUrl, parseRakutenCover } from './core/rakuten.js';
+import { rakutenIsbnUrl, parseRakutenCover, rakutenMagazineUrl, parseRakutenMagazine } from './core/rakuten.js';
+import { isMagazineCode } from './core/isbn.js';
 import { newBook } from './core/model.js';
 
 class RetryableError extends Error {}
@@ -103,6 +104,21 @@ export function createLookupQueue({
     }
   }
 
+  // Returns magazine info, null when Rakuten has none, or undefined when it cannot be asked (no keys or no network).
+  async function magazineInfo(code) {
+    const keys = await getRakutenKeys();
+    if (!keys?.appId || !keys?.accessKey) return undefined;
+    const wait = minIntervalMs - (now() - lastRakutenAt);
+    if (wait > 0) await sleep(wait);
+    lastRakutenAt = now();
+    try {
+      const res = await fetchText(rakutenMagazineUrl(code, keys));
+      return res.status === 200 ? parseRakutenMagazine(JSON.parse(res.text)) : undefined;
+    } catch {
+      return undefined;
+    }
+  }
+
   async function lookupIsbn(isbn) {
     const text = await ndlFetch(ndlIsbnUrl(isbn));
     const ndl = text ? pickBestNdlItem(parseNdlOpenSearch(text, DOMParserImpl)) : null;
@@ -113,6 +129,22 @@ export function createLookupQueue({
   async function processOne(id, overwrite) {
     const book = await db.getBook(id);
     if (!book || !book.isbn || !isOnline()) return;
+    if (isMagazineCode(book.isbn)) {
+      const info = await magazineInfo(book.isbn);
+      if (info === undefined) return; // stays pending until keys or network are there
+      const latest = await db.getBook(id);
+      if (!latest) return;
+      const patch = info ? {
+        title: overwrite || !latest.title ? info.title : latest.title,
+        publisher: overwrite || !latest.publisher ? info.publisher : latest.publisher,
+        issued: overwrite || !latest.issued ? info.issued : latest.issued,
+        coverUrl: latest.coverUrl || info.coverUrl,
+        lookup: 'ok',
+      } : { lookup: 'not_found' };
+      const saved = await db.putBook({ ...latest, ...patch });
+      for (const cb of listeners) cb(saved);
+      return;
+    }
     let result;
     try {
       result = await lookupIsbn(book.isbn);
@@ -204,6 +236,10 @@ export function createLookupQueue({
       const saved = await db.putBook({ ...latest, coverUrl: url });
       for (const cb of listeners) cb(saved);
       return true;
+    },
+    async fetchMagazine(code) {
+      const info = await magazineInfo(code);
+      return info ? { ...info, isbn: code } : null;
     },
     hasRakuten: async () => Boolean((await getRakutenKeys())?.appId),
     onUpdate(cb) {

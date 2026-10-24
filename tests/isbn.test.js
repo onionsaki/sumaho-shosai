@@ -23,7 +23,7 @@ test('toIsbn13 accepts an X check digit', () => {
 test('classifyBarcode', () => {
   assert.deepEqual(classifyBarcode('9784763135476'), { kind: 'isbn', isbn: '9784763135476' });
   assert.deepEqual(classifyBarcode('1920030014008'), { kind: 'price' });
-  assert.deepEqual(classifyBarcode('4910123450123'), { kind: 'magazine' });
+  assert.deepEqual(classifyBarcode('4910123450123'), { kind: 'magazine', code: '4910123450123' });
   assert.deepEqual(classifyBarcode('9784763135477'), { kind: 'other' }); // bad check digit
   assert.deepEqual(classifyBarcode('4901234567894'), { kind: 'other' });
 });

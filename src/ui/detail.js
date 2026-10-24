@@ -3,7 +3,7 @@
 import { h, fill, sheet, toast, confirmDialog, segmented, formatDate } from './dom.js';
 import { coverEl, displayTitle } from './shelf.js';
 import { LABELS, newBook, todayStr } from '../core/model.js';
-import { toIsbn13 } from '../core/isbn.js';
+import { toIsbn13, isMagazineCode } from '../core/isbn.js';
 import { workKeyOf } from '../core/volume.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { icon } from './icons.js';
@@ -160,7 +160,8 @@ export async function openDetail(bookId, ctx) {
       msg,
       h('button', { class: 'btn primary wide', style: { marginTop: '12px' }, onClick: async () => {
         const rawIsbn = f.isbn.value.trim();
-        const isbn = rawIsbn ? toIsbn13(rawIsbn) : '';
+        const digits = rawIsbn.normalize('NFKC').replace(/[\s-]/g, '');
+        const isbn = rawIsbn ? (toIsbn13(rawIsbn) ?? (isMagazineCode(digits) ? digits : null)) : ''; // magazines keep their 491… code
         if (rawIsbn && !isbn) { msg.textContent = 'ISBNの数字が正しくありません'; return; }
         if (isbn && isbn !== book.isbn) {
           const other = await db.getBookByIsbn(isbn);

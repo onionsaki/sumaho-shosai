@@ -267,3 +267,27 @@ test('fillCover adds a Rakuten cover to a book that has none', async () => {
   assert.equal((await db.getBook(book.id)).coverUrl, 'https://r/x.jpg');
   assert.equal((await db.getBook(book.id)).title, 't');
 });
+
+test('a magazine code is looked up on Rakuten, not NDL', async () => {
+  const db = await fresh();
+  const book = await db.putBook(newBook({ isbn: '4910203141163', lookup: 'pending' }));
+  const fetchImpl = fakeFetch([['BooksMagazine', { status: 200, body: '{"Items":[{"title":"月刊X 12月号","publisherName":"X社","salesDate":"2026年11月01日","largeImageUrl":"https://t/m.jpg"}]}' }]]);
+  const q = make(db, fetchImpl, fakeClock(), { getRakutenKeys: async () => ({ appId: 'A', accessKey: 'K' }) });
+  q.enqueue(book.id);
+  await q.idle();
+  const saved = await db.getBook(book.id);
+  assert.equal(saved.title, '月刊X 12月号');
+  assert.equal(saved.publisher, 'X社');
+  assert.equal(saved.coverUrl, 'https://t/m.jpg');
+  assert.equal(saved.lookup, 'ok');
+  assert.ok(!fetchImpl.calls.some(u => u.includes('ndlsearch')));
+});
+
+test('fetchMagazine returns the info for a magazine code', async () => {
+  const db = await fresh();
+  const fetchImpl = fakeFetch([['BooksMagazine', { status: 200, body: '{"Items":[{"title":"T","publisherName":"P","salesDate":"2026年11月01日","largeImageUrl":""}]}' }]]);
+  const q = make(db, fetchImpl, fakeClock(), { getRakutenKeys: async () => ({ appId: 'A', accessKey: 'K' }) });
+  const info = await q.fetchMagazine('4910203141163');
+  assert.equal(info.title, 'T');
+  assert.equal(info.isbn, '4910203141163');
+});

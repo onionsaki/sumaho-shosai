@@ -153,13 +153,14 @@ export function mount(container, ctx) {
 
     async function handle(code) {
       const c = classifyBarcode(code);
-      if (c.kind === 'magazine') { feedback.error(); toast('雑誌のバーコードです。手で登録してください'); return; }
-      if (c.kind !== 'isbn') return;
-      const existing = await db.getBookByIsbn(c.isbn);
-      const r = applyScan(existing, session, c.isbn, todayStr());
+      // Magazines are kept under their 491… code and looked up on Rakuten (needs the keys in 設定).
+      if (c.kind === 'magazine' && !(await lookup.hasRakuten())) { feedback.error(); toast('雑誌は、設定で楽天のキーを入れると登録できます'); return; }
+      if (c.kind !== 'isbn' && c.kind !== 'magazine') return;
+      const existing = await db.getBookByIsbn(code);
+      const r = applyScan(existing, session, code, todayStr());
       const saved = r.changed ? await db.putBook(r.book) : r.book;
       if (r.action === 'created') { lookup.enqueue(saved.id); feedback.success(); } else feedback.duplicate();
-      entries.unshift({ isbn: c.isbn, bookId: saved.id, action: r.action, before: r.before, changed: r.changed, title: saved.title, lookup: saved.lookup });
+      entries.unshift({ isbn: code, bookId: saved.id, action: r.action, before: r.before, changed: r.changed, title: saved.title, lookup: saved.lookup });
       render();
     }
 
@@ -247,10 +248,10 @@ export function mount(container, ctx) {
 
     async function handle(code) {
       const c = classifyBarcode(code);
-      if (c.kind === 'magazine') { feedback.error(); toast('雑誌のバーコードです'); return; }
-      if (c.kind !== 'isbn') return;
+      if (c.kind !== 'isbn' && c.kind !== 'magazine') return;
+      const magazine = c.kind === 'magazine';
       enrichToken++; // any newer scan supersedes a pending title lookup
-      const book = await db.getBookByIsbn(c.isbn);
+      const book = await db.getBookByIsbn(code);
       const workBooks = book?.workKey ? await db.booksByWorkKey(book.workKey) : [];
       const r = checkResult(book, workBooks);
       const big = {
@@ -275,19 +276,19 @@ export function mount(container, ctx) {
         h('div', { class: 'big' }, big), titleEl, noteEl, ...workLines(book, r.work), extra));
 
       if (r.status !== 'unregistered') return;
-      const addBtn = info => h('button', { class: 'btn', style: { marginTop: '10px' }, onClick: () => addWanted(info, c.isbn) }, '読みたいに追加');
+      const addBtn = info => h('button', { class: 'btn', style: { marginTop: '10px' }, onClick: () => addWanted(info, code) }, '読みたいに追加');
       if (!navigator.onLine) { extra.append(addBtn(null)); return; }
       const token = enrichToken;
-      enrich(c.isbn, token, titleEl, noteEl, extra, addBtn); // not awaited: the next scan answers at once
+      enrich(code, token, titleEl, noteEl, extra, addBtn, magazine); // not awaited: the next scan answers at once
     }
 
     let enrichToken = 0;
-    async function enrich(isbn, token, titleEl, noteEl, extra, addBtn) {
-      const info = await lookup.fetchInfo(isbn);
+    async function enrich(isbn, token, titleEl, noteEl, extra, addBtn, magazine = false) {
+      const info = magazine ? await lookup.fetchMagazine(isbn) : await lookup.fetchInfo(isbn);
       if (disposed || token !== enrichToken) return; // a newer scan replaced this card
       titleEl.textContent = info?.title ?? '';
       noteEl.textContent = info ? '' : '登録なし';
-      if (info && info.volume !== null) {
+      if (info && info.volume !== null && info.volume !== undefined) {
         const key = workKeyOf(info.workTitle || info.title, info.authors);
         const siblings = await db.booksByWorkKey(key);
         if (siblings.length) {

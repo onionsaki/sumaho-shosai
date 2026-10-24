@@ -26,3 +26,19 @@ test('parseRakutenCover ignores no-image placeholders, empty results and errors'
   assert.equal(parseRakutenCover({ error: 'wrong_parameter' }), '');
   assert.equal(parseRakutenCover(null), '');
 });
+
+test('rakutenMagazineUrl searches magazines by JAN', async () => {
+  const { rakutenMagazineUrl } = await import('../src/core/rakuten.js');
+  const url = new URL(rakutenMagazineUrl('4910203141163', { appId: 'APP', accessKey: 'KEY' }));
+  assert.equal(url.pathname, '/services/api/BooksMagazine/Search/20170404');
+  assert.equal(url.searchParams.get('jan'), '4910203141163');
+  assert.equal(url.searchParams.get('accessKey'), 'KEY');
+});
+
+test('parseRakutenMagazine reads title, publisher, month and cover', async () => {
+  const { parseRakutenMagazine } = await import('../src/core/rakuten.js');
+  const json = { Items: [{ title: '週刊少年ジャンプ 2026年 11/16号', publisherName: '集英社', salesDate: '2026年11月02日', largeImageUrl: 'https://t/j.jpg' }] };
+  assert.deepEqual(parseRakutenMagazine(json), { title: '週刊少年ジャンプ 2026年 11/16号', publisher: '集英社', issued: '2026-11', coverUrl: 'https://t/j.jpg' });
+  assert.equal(parseRakutenMagazine({ Items: [] }), null);
+  assert.equal(parseRakutenMagazine({ Items: [{ Item: { title: 'x', publisherName: '', salesDate: '2026年05月号' } }] }).issued, '2026-05');
+});

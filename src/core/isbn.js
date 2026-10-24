@@ -39,6 +39,8 @@ export function classifyBarcode(raw) {
   const s = String(raw ?? '');
   if (isValidIsbn13(s)) return { kind: 'isbn', isbn: s };
   if (/^19\d{11}$/.test(s)) return { kind: 'price' };
-  if (/^491\d{10}$/.test(s)) return { kind: 'magazine' };
+  if (/^491\d{10}$/.test(s)) return { kind: 'magazine', code: s };
   return { kind: 'other' };
 }
+
+export const isMagazineCode = code => /^491[0-9]{10}$/.test(String(code ?? ''));
