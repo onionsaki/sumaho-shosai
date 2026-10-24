@@ -140,13 +140,31 @@ export function detectQuad(img) {
   }
   const typical = median(clean.map(([x, y, p]) => diff(p, expected(x, y))));
   const dmap = new Float32Array(w * h);
-  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) dmap[y * w + x] = diff(px(x, y), expected(x, y));
+  const shadow = new Uint8Array(w * h); // only darker, same hue: never grown into below
+  for (let y = 0; y < h; y++) for (let x = 0; x < w; x++) {
+    const p = px(x, y), e = expected(x, y);
+    dmap[y * w + x] = diff(p, e);
+    const lp = (p[0] + p[1] + p[2]) / 3, le = (e[0] + e[1] + e[2]) / 3;
+    shadow[y * w + x] = lp < le - 6 && Math.abs(sat(p) - sat(e)) < 14 ? 1 : 0;
+  }
   // The cut between "cloth" and "book" is read from this photo (Otsu: the split that best separates two groups),
   // never below what the cloth's own texture reaches.
   const limit = Math.max(26, typical * 2.5, otsu(dmap));
 
   let mask = new Uint8Array(w * h);
   for (let i = 0; i < w * h; i++) mask[i] = dmap[i] > limit ? 1 : 0;
+  // Two levels: grow from the clearly-book parts into anything joined to them that is only a little off the
+  // cloth, so a white cover on light grey is kept while loose shine on the cloth is not (real photo 2026-10-25).
+  const weak = Math.max(20, typical * 3);
+  const stack = [];
+  for (let i = 0; i < w * h; i++) if (mask[i]) stack.push(i);
+  while (stack.length) {
+    const i = stack.pop();
+    const x = i % w;
+    for (const j of [x + 1 < w ? i + 1 : -1, x > 0 ? i - 1 : -1, i + w < w * h ? i + w : -1, i - w]) {
+      if (j >= 0 && !mask[j] && !shadow[j] && dmap[j] > weak) { mask[j] = 1; stack.push(j); }
+    }
+  }
 
   // 2. close small gaps (dilate then erode) so a cover split by cloth-coloured stripes joins up
   const r = Math.max(1, Math.round(Math.min(w, h) * 0.035));

@@ -144,3 +144,11 @@ test('detectQuad keeps a pale cover and ignores a shadow on grey cloth', () => {
   const cover = (x, y, r) => ((x * 7 + y * 3) % 97 < 8 ? [40, 30, 30] : [238 - r() * 8, 182 - r() * 8, 192 - r() * 8]);
   assertCorners(detectQuad(scene({ corners, bg, cover })), corners, 10);
 });
+
+// From a real photo (2026-10-25): white cover on light grey quilt, only the green band stood out.
+test('detectQuad keeps a white cover above a coloured band on light grey cloth', () => {
+  const corners = [[70, 35], [180, 35], [185, 270], [60, 268]];
+  const bg = (x, y, r) => [200 + r() * 12, 204 + r() * 12, 201 + r() * 12];
+  const cover = (x, y, r) => (y > 150 ? [170, 205, 60] : (x * 5 + y * 3) % 89 < 6 ? [30, 30, 30] : [247 - r() * 5, 247 - r() * 5, 245 - r() * 5]);
+  assertCorners(detectQuad(scene({ corners, bg, cover })), corners, 10);
+});
