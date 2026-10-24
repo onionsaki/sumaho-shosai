@@ -1,3 +1,4 @@
+// Superseded 2026-10-25: the app icon is now 鬼さん's own design (案1). Running this would overwrite icons/icon-*.png with the old placeholder.
 // Writes icons/icon-192.png and icons/icon-512.png using only node:zlib.
 // Motif: four book spines standing on a shelf, white on the accent green.
 
