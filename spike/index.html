@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>スマホ書斎 試作</title>
+<style>
+  body { font-family: system-ui, sans-serif; margin: 0; padding: 12px; background: #f6f1e7; color: #222; }
+  h1 { font-size: 18px; margin: 4px 0 8px; }
+  button { font-size: 18px; padding: 12px 16px; margin: 4px 4px 8px 0; border-radius: 10px; border: 1px solid #8a6d3b; background: #fff; }
+  video { width: 100%; max-height: 40vh; background: #000; border-radius: 8px; object-fit: cover; }
+  #log { list-style: none; padding: 0; font-size: 14px; }
+  #log li { padding: 6px 0; border-bottom: 1px solid #ddd; word-break: break-all; }
+  #covers img { height: 90px; margin: 4px; border: 1px solid #ccc; }
+  .ok { color: #1b6e2a; } .ng { color: #b3261e; }
+</style>
+</head>
+<body>
+<h1>スマホ書斎 試作（確認用）</h1>
+<button id="start">開始</button>
+<button id="burst">連続テスト</button>
+<video id="video" playsinline muted></video>
+<div id="covers"></div>
+<ul id="log"></ul>
+<script type="module">
+const log = (text, cls = '') => {
+  const li = document.createElement('li');
+  li.textContent = `${new Date().toLocaleTimeString()} ${text}`;
+  if (cls) li.className = cls;
+  document.getElementById('log').prepend(li);
+};
+const NS = {
+  dc: 'http://purl.org/dc/elements/1.1/',
+  dcndl: 'http://ndl.go.jp/dcndl/terms/',
+};
+const classify = raw => {
+  if (/^97[89]\d{10}$/.test(raw)) return 'ISBN';
+  if (/^19\d{11}$/.test(raw)) return '値段の段（無視）';
+  if (/^491\d{10}$/.test(raw)) return '雑誌';
+  return 'その他';
+};
+async function ndl(isbn) {
+  const res = await fetch(`https://ndlsearch.ndl.go.jp/api/opensearch?isbn=${isbn}`);
+  const text = await res.text();
+  if (!res.ok) return { status: res.status };
+  const doc = new DOMParser().parseFromString(text, 'application/xml');
+  const item = doc.getElementsByTagName('item')[0];
+  if (!item) return { status: res.status, title: '(0件)' };
+  const t = item.getElementsByTagNameNS(NS.dc, 'title')[0]?.textContent ?? '';
+  const v = item.getElementsByTagNameNS(NS.dcndl, 'volume')[0]?.textContent ?? '';
+  return { status: res.status, title: t, volume: v };
+}
+async function openbd(isbn) {
+  try {
+    const res = await fetch(`https://api.openbd.jp/v1/get?isbn=${isbn}`);
+    const json = await res.json();
+    return json?.[0]?.summary ?? null;
+  } catch (e) { return { error: String(e) }; }
+}
+function thumb(isbn) {
+  const img = new Image();
+  img.alt = isbn;
+  img.onload = () => log(`国会図書館の表紙：表示できた ${isbn}`, 'ok');
+  img.onerror = () => log(`国会図書館の表紙：表示できない ${isbn}`, 'ng');
+  img.src = `https://ndlsearch.ndl.go.jp/thumbnail/${isbn}.jpg`;
+  document.getElementById('covers').prepend(img);
+}
+const seen = new Set();
+async function onIsbn(isbn) {
+  const t0 = performance.now();
+  const r = await ndl(isbn);
+  log(`国会図書館 ${r.status}：${r.title ?? ''} ${r.volume ?? ''}（${Math.round(performance.now() - t0)}ms）`, r.status === 200 ? 'ok' : 'ng');
+  const o = await openbd(isbn);
+  log(`openBD：${o ? (o.title ?? o.error) + (o.cover ? '（表紙あり）' : '（表紙なし）') : '該当なし'}`);
+  thumb(isbn);
+}
+document.getElementById('start').onclick = async () => {
+  try {
+    log(`BarcodeDetector：${'BarcodeDetector' in window ? 'あり' : 'なし'}`, 'BarcodeDetector' in window ? 'ok' : 'ng');
+    if (!('BarcodeDetector' in window)) return;
+    const formats = await BarcodeDetector.getSupportedFormats();
+    log(`対応形式：${formats.join(', ')}`, formats.includes('ean_13') ? 'ok' : 'ng');
+    const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }, audio: false });
+    const video = document.getElementById('video');
+    video.srcObject = stream;
+    await video.play();
+    const detector = new BarcodeDetector({ formats: ['ean_13'] });
+    setInterval(async () => {
+      if (video.readyState < 2) return;
+      const codes = await detector.detect(video);
+      for (const c of codes) {
+        if (seen.has(c.rawValue)) continue;
+        seen.add(c.rawValue);
+        const kind = classify(c.rawValue);
+        log(`読み取り：${c.rawValue}（${kind}）`);
+        if (kind === 'ISBN') onIsbn(c.rawValue);
+      }
+    }, 150);
+  } catch (e) { log(`エラー：${e}`, 'ng'); }
+};
+document.getElementById('burst').onclick = async () => {
+  try {
+    const res = await fetch('https://ndlsearch.ndl.go.jp/api/opensearch?title=ONE%20PIECE&creator=%E5%B0%BE%E7%94%B0%E6%A0%84%E4%B8%80%E9%83%8E&cnt=40');
+    const doc = new DOMParser().parseFromString(await res.text(), 'application/xml');
+    const ids = [...doc.getElementsByTagNameNS(NS.dc, 'identifier')]
+      .filter(e => (e.getAttribute('xsi:type') || '').includes('ISBN'))
+      .map(e => e.textContent.replace(/[^0-9X]/g, ''))
+      .filter(s => s.length === 13);
+    const isbns = [...new Set(ids)].slice(0, 10);
+    log(`連続テスト開始：${isbns.length}件（1秒間隔）`);
+    let ng = 0;
+    for (const isbn of isbns) {
+      await new Promise(r => setTimeout(r, 1000));
+      const r = await fetch(`https://ndlsearch.ndl.go.jp/api/opensearch?isbn=${isbn}`);
+      if (r.status !== 200) ng++;
+      log(`${isbn} → ${r.status}`, r.status === 200 ? 'ok' : 'ng');
+    }
+    log(`連続テスト終了：失敗 ${ng}件`, ng ? 'ng' : 'ok');
+  } catch (e) { log(`エラー：${e}`, 'ng'); }
+};
+</script>
+</body>
+</html>
