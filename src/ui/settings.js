@@ -6,6 +6,7 @@ import { makeBackup, validateBackup, backupFileName } from '../core/backup.js';
 import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami, SHELF_ROOM } from '../core/stats.js';
 import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
+import { isStale } from '../core/stale.js';
 
 const readFile = file => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -26,6 +27,7 @@ export function mount(container, ctx) {
   let openTagsOnRender = false; // keep タグの整理 open after editing a tag
 
   async function render() {
+    const staleRules = await db.staleRules(); // first, since it may add the 法律・参照資料 tag
     const [books, tags, examTagId, staleYears, lastBackupAt, theme, rakutenAppId, rakutenAccessKey, tsundokuSetting, shelfRoom] = await Promise.all([
       db.allBooks(), db.allTags(), db.getSetting('examTagId'), db.getSetting('staleYears'), db.getSetting('lastBackupAt'),
       db.getSetting('theme'), db.getSetting('rakutenAppId'), db.getSetting('rakutenAccessKey'),
@@ -79,7 +81,6 @@ export function mount(container, ctx) {
         } }, 'まとめる'),
         h('button', { class: 'btn danger wide', style: { marginTop: '16px' }, onClick: async () => {
           if (!(await confirmDialog(`「${tag.name}」を削除します。${usage.get(tag.id) ?? 0}冊からこのタグが外れます。`, '削除する'))) return;
-          if (tag.id === examTagId) await db.setSetting('examTagId', '');
           await db.deleteTag(tag.id);
           s.close(); toast('削除しました'); render();
         } }, 'このタグを削除')), { title: 'タグ' });
@@ -99,12 +100,19 @@ export function mount(container, ctx) {
     newTagInput.addEventListener('keydown', e => { if (e.key === 'Enter') addTag(); });
     const tagAdd = h('div', { class: 'tag-add' }, newTagInput, h('button', { class: 'btn primary', onClick: addTag }, '追加'));
 
-    // --- stale rule ---
-    const examSelect = h('select', { onChange: e => db.setSetting('examTagId', e.target.value) },
-      h('option', { value: '' }, '（使わない）'),
-      tags.map(t => h('option', { value: t.id, selected: t.id === examTagId }, t.name)));
-    const yearsSelect = h('select', { onChange: e => db.setSetting('staleYears', Number(e.target.value)) },
-      Array.from({ length: 10 }, (_, i) => i + 1).map(n => h('option', { value: n, selected: n === (staleYears ?? 2) }, `${n}年`)));
+    // --- stale rules: one tag, its own number of years ---
+    const saveRules = async rules => { await db.setSetting('staleRules', rules); render(); };
+    const ruleRows = staleRules.map((r, i) => h('div', { class: 'rule-row' },
+      h('select', { 'aria-label': '対象のタグ', onChange: e => saveRules(staleRules.map((x, j) => (j === i ? { ...x, tagId: e.target.value } : x))) },
+        tags.filter(t => t.id === r.tagId || !staleRules.some(x => x.tagId === t.id))
+          .map(t => h('option', { value: t.id, selected: t.id === r.tagId }, t.name))),
+      h('select', { 'aria-label': '年数', onChange: e => saveRules(staleRules.map((x, j) => (j === i ? { ...x, years: Number(e.target.value) } : x))) },
+        Array.from({ length: 10 }, (_, k) => k + 1).map(n => h('option', { value: n, selected: n === r.years }, `${n}年`))),
+      h('button', { class: 'icon-btn', 'aria-label': 'この組を外す', onClick: () => saveRules(staleRules.filter((_, j) => j !== i)) }, '×')));
+    const freeTags = tags.filter(t => !staleRules.some(r => r.tagId === t.id));
+    const addRule = freeTags.length
+      ? h('button', { class: 'btn wide', style: { marginTop: '10px' }, onClick: () => saveRules([...staleRules, { tagId: freeTags[0].id, years: 3 }]) }, 'タグを足す')
+      : null;
 
     // --- 蔵書のすがた: how many books, seen from several angles ---
     // Until a tag is chosen, a tag called 積読 is used if there is one.
@@ -119,6 +127,7 @@ export function mount(container, ctx) {
     const statRow = (label, value, note) => h('div', { class: 'stat-block' },
       h('div', { class: 'stat' }, h('span', {}, label), h('span', { class: 'stat-value' }, value)),
       note ? h('div', { class: 'muted small stat-note' }, note) : null);
+    const staleCount = books.filter(b => isStale(b, staleRules, todayStr())).length;
     const paperCount = books.filter(b => b.ownership === 'owned' && b.format !== 'ebook').length;
     const sugata = h('div', { class: 'card' },
       statRow('持っている本', `${countOwned(books).toLocaleString()}冊`,
@@ -129,6 +138,9 @@ export function mount(container, ctx) {
         `持っている本の定価（税抜）の合計${noPrice ? `。定価の分からない本が${noPrice.toLocaleString()}冊あるので、実際はもう少し多めです` : ''}`),
       statRow('床に並べると', tatami < 0.1 ? '畳 0.1枚分未満' : `畳 ${tatami < 10 ? tatami.toFixed(1) : Math.round(tatami)}枚分`,
         '紙の本を表紙を上にして床に並べた広さ。1冊を四六判（12.8×18.8cm）として数えた、だいたいの目安です'),
+      statRow('古いかもしれない本', `${staleCount.toLocaleString()}冊`,
+        staleCount ? h('button', { class: 'link-btn', onClick: () => { location.hash = 'shelf?stale=1'; } }, '本棚で見る')
+          : '法律・試験用・参考書などで、発行から年数のたった本はありません'),
       h('div', { class: 'stat-block' },
         h('div', { class: 'stat' }, h('span', {}, '本棚の空き'), h('span', { class: 'muted small' }, '自分で選ぶ')),
         segmented(SHELF_ROOM, shelfRoom ?? '', v => db.setSetting('shelfRoom', v))));
@@ -243,10 +255,11 @@ export function mount(container, ctx) {
         } }, '保存する'),
         fillBtn),
 
-      h('div', { class: 'section-title' }, '古い参考書の判定'),
+      h('div', { class: 'section-title' }, '古いかもの判定'),
       h('div', { class: 'card' },
-        h('label', { class: 'field' }, h('span', {}, '対象のタグ'), examSelect),
-        h('label', { class: 'field' }, h('span', {}, '発行からこの年数がたったら「古いかも」'), yearsSelect)),
+        h('p', { class: 'muted small', style: { marginTop: 0 } }, 'このタグの本は、発行からこの年数がたったら「古いかも」と出します'),
+        ruleRows.length ? ruleRows : h('p', { class: 'small' }, '（使っていません）'),
+        addRule),
 
       h('details', { class: 'card', style: { marginTop: '22px' }, open: openTagsOnRender, onToggle: e => { openTagsOnRender = e.target.open; } },
         h('summary', { style: { cursor: 'pointer', fontWeight: '700', minHeight: '40px' } }, `タグの整理（${tags.length}個）`),

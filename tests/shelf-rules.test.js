@@ -1,11 +1,12 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { filterBooks, sortBooks } from '../src/core/search.js';
-import { isStale } from '../src/core/stale.js';
+import { isStale, defaultStaleRules } from '../src/core/stale.js';
 import { ownedPriceSum, countOwned, tsundokuRate, floorTatami, ownedWithoutPrice } from '../src/core/stats.js';
 import { newBook } from '../src/core/model.js';
 
-const ctx = { examTagId: 'exam', staleYears: 2, today: '2026-10-24' };
+const EXAM = [{ tagId: 'exam', years: 2 }];
+const ctx = { staleRules: EXAM, today: '2026-10-24' };
 
 test('search by reading in hiragana finds katakana reading', () => {
   const b = newBook({ title: 'ONE PIECE', titleKana: 'ワンピース' });
@@ -69,14 +70,31 @@ test('recent sort is newest first and returns a new array', () => {
 
 test('isStale', () => {
   const exam = issued => newBook({ tagIds: ['exam'], issued });
-  assert.equal(isStale(exam('2023-09'), 'exam', 2, '2026-10-24'), true);
-  assert.equal(isStale(exam('2025-04'), 'exam', 2, '2026-10-24'), false);
-  assert.equal(isStale(exam('2024-10'), 'exam', 2, '2026-10-24'), true); // exactly 2 years
-  assert.equal(isStale(exam('2024-11'), 'exam', 2, '2026-10-24'), false);
-  assert.equal(isStale(exam('2024'), 'exam', 2, '2026-10-24'), true); // read as January
-  assert.equal(isStale(exam(''), 'exam', 2, '2026-10-24'), false);
-  assert.equal(isStale(newBook({ issued: '2010' }), 'exam', 2, '2026-10-24'), false); // no exam tag
-  assert.equal(isStale(newBook({ tagIds: ['exam'], issued: '2010', ownership: 'released' }), 'exam', 2, '2026-10-24'), false);
+  assert.equal(isStale(exam('2023-09'), EXAM, '2026-10-24'), true);
+  assert.equal(isStale(exam('2025-04'), EXAM, '2026-10-24'), false);
+  assert.equal(isStale(exam('2024-10'), EXAM, '2026-10-24'), true); // exactly 2 years
+  assert.equal(isStale(exam('2024-11'), EXAM, '2026-10-24'), false);
+  assert.equal(isStale(exam('2024'), EXAM, '2026-10-24'), true); // read as January
+  assert.equal(isStale(exam(''), EXAM, '2026-10-24'), false);
+  assert.equal(isStale(newBook({ issued: '2010' }), EXAM, '2026-10-24'), false); // no exam tag
+  assert.equal(isStale(newBook({ tagIds: ['exam'], issued: '2010', ownership: 'released' }), EXAM, '2026-10-24'), false);
+});
+
+test('isStale: each tag has its own years, any matching tag is enough', () => {
+  const rules = [{ tagId: 'exam', years: 2 }, { tagId: 'law', years: 3 }];
+  const book = (tagIds, issued) => newBook({ tagIds, issued });
+  assert.equal(isStale(book(['law'], '2024-04'), rules, '2026-10-24'), false); // 3 years not yet
+  assert.equal(isStale(book(['law'], '2023-09'), rules, '2026-10-24'), true);
+  assert.equal(isStale(book(['law', 'exam'], '2024-04'), rules, '2026-10-24'), true); // exam's 2 years
+  assert.equal(isStale(book(['law'], '2010'), [], '2026-10-24'), false);
+});
+
+test('defaultStaleRules keeps the old exam setting and adds 参考書 and 法律・参照資料 at 3 years', async () => {
+  const made = [];
+  const tagIdOf = async name => { made.push(name); return `id:${name}`; };
+  const rules = await defaultStaleRules({ examTagId: 'exam', staleYears: 2 }, tagIdOf);
+  assert.deepEqual(rules, [{ tagId: 'exam', years: 2 }, { tagId: 'id:参考書', years: 3 }, { tagId: 'id:法律・参照資料', years: 3 }]);
+  assert.deepEqual(made, ['参考書', '法律・参照資料']);
 });
 
 test('ownedPriceSum and countOwned', () => {

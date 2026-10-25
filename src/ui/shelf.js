@@ -46,6 +46,7 @@ export function mount(container, ctx) {
   const { db, lookup } = ctx;
   const params = new URLSearchParams(location.hash.split('?')[1] ?? '');
   if (params.get('review') === '1') { Object.assign(state, { needsReviewOnly: true, query: '', ownership: [] }); history.replaceState(null, '', '#shelf'); }
+  if (params.get('stale') === '1') { Object.assign(state, { staleOnly: true, query: '', ownership: [] }); history.replaceState(null, '', '#shelf'); }
 
   let books = [];
   let tags = [];
@@ -68,7 +69,7 @@ export function mount(container, ctx) {
     timer = setTimeout(() => { state.query = search.value; shown = PAGE; render(); }, 150);
   });
 
-  const ctxFor = () => ({ examTagId: settings.examTagId, staleYears: settings.staleYears, today: todayStr() });
+  const ctxFor = () => ({ staleRules: settings.staleRules, today: todayStr() });
   const toggle = (arr, v) => (arr.includes(v) ? arr.filter(x => x !== v) : [...arr, v]);
 
   // Yomoo-style: big status buttons with counts (one at a time); everything else lives in the 絞り込み sheet.
@@ -149,7 +150,7 @@ export function mount(container, ctx) {
     const badges = [];
     if (book.ownership !== 'owned') badges.push(h('span', { class: `badge ${book.ownership}` }, LABELS.ownership[book.ownership]));
     if (book.format === 'ebook') badges.push(h('span', { class: 'badge ebook' }, '電子'));
-    if (isStale(book, settings.examTagId, settings.staleYears, todayStr())) badges.push(h('span', { class: 'badge stale' }, '古いかも'));
+    if (isStale(book, settings.staleRules, todayStr())) badges.push(h('span', { class: 'badge stale' }, '古いかも'));
     if (book.lookup === 'not_found') badges.push(h('span', { class: 'badge review' }, 'あとで確認'));
     if (book.lookup === 'pending') badges.push(h('span', { class: 'badge' }, '情報を取得中'));
     return h('li', { class: 'book-row', onClick: () => ctx.openDetail(book.id) },
@@ -229,8 +230,7 @@ export function mount(container, ctx) {
   async function load() {
     [books, tags] = await Promise.all([db.allBooks(), db.allTags()]);
     settings = {
-      examTagId: await db.getSetting('examTagId'),
-      staleYears: (await db.getSetting('staleYears')) ?? 2,
+      staleRules: await db.staleRules(),
       lastBackupAt: await db.getSetting('lastBackupAt'),
     };
     if (disposed) return;

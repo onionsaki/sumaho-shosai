@@ -17,6 +17,20 @@ test('seeds tags and settings', async () => {
   assert.deepEqual(await db.getSetting('lastSession'), { ownership: 'owned', readStatus: 'read', tagIds: [] });
 });
 
+test('staleRules are made once from the old setting, and follow a merged tag', async () => {
+  const db = await fresh();
+  const rules = await db.staleRules();
+  const tags = await db.allTags();
+  const id = name => tags.find(t => t.name === name).id;
+  assert.deepEqual(rules, [{ tagId: id('試験用'), years: 2 }, { tagId: id('参考書'), years: 3 }, { tagId: id('法律・参照資料'), years: 3 }]);
+  assert.deepEqual(await db.staleRules(), rules);
+  assert.equal((await db.allTags()).length, tags.length); // no second 法律・参照資料
+  await db.mergeTags(id('試験用'), id('参考書'));
+  assert.deepEqual(await db.staleRules(), [{ tagId: id('参考書'), years: 3 }, { tagId: id('法律・参照資料'), years: 3 }]);
+  await db.deleteTag(id('法律・参照資料'));
+  assert.deepEqual(await db.staleRules(), [{ tagId: id('参考書'), years: 3 }]);
+});
+
 test('reopening does not seed twice', async () => {
   const name = `reopen-${Date.now()}`;
   const a = await openDb(name);

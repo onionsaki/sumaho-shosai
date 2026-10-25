@@ -31,7 +31,7 @@ export function filterBooks(books, filter = {}, ctx = {}) {
     if (readStatus.length && !readStatus.includes(b.readStatus)) return false;
     if (tagIds.length && !tagIds.every(t => b.tagIds.includes(t))) return false;
     if (needsReviewOnly && b.lookup !== 'not_found') return false;
-    if (staleOnly && !isStale(b, ctx.examTagId, ctx.staleYears, ctx.today)) return false;
+    if (staleOnly && !isStale(b, ctx.staleRules, ctx.today)) return false;
     if (terms.length) {
       const text = haystack(b);
       if (!terms.every(t => text.includes(t))) return false;

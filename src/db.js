@@ -3,6 +3,7 @@
 
 import { SEED_TAGS, newId } from './core/model.js';
 import { normalizeForSearch } from './core/normalize.js';
+import { defaultStaleRules } from './core/stale.js';
 
 const req = r => new Promise((resolve, reject) => {
   r.onsuccess = () => resolve(r.result);
@@ -165,6 +166,13 @@ export async function openDb(name = 'sumaho-shosai') {
       }
       get('tags').delete(fromId);
       await done(tx);
+      const rules = await api.getSetting('staleRules');
+      if (rules?.some(r => r.tagId === fromId)) {
+        // The merged tag's rule moves with it, unless the tag it went into already has one.
+        const kept = intoId && rules.some(r => r.tagId === intoId);
+        await api.setSetting('staleRules', rules
+          .map(r => (r.tagId === fromId ? { ...r, tagId: kept ? null : intoId } : r)).filter(r => r.tagId));
+      }
     },
 
     async getSetting(key) {
@@ -178,6 +186,16 @@ export async function openDb(name = 'sumaho-shosai') {
     },
     async allSettings() {
       return req(store('settings').get('settings').getAll());
+    },
+    // 「古いかも」 rules, one per tag. Made once from the old examTagId/staleYears pair (adds 法律・参照資料).
+    async staleRules() {
+      const saved = await api.getSetting('staleRules');
+      if (Array.isArray(saved)) return saved;
+      const rules = await defaultStaleRules(
+        { examTagId: await api.getSetting('examTagId'), staleYears: await api.getSetting('staleYears') },
+        async name => (await api.createTag(name)).id);
+      await api.setSetting('staleRules', rules);
+      return rules;
     },
 
     async replaceAll({ books, tags, settings, photos = [] }) {
