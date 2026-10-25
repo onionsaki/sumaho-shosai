@@ -13,9 +13,10 @@ import { LABELS, todayStr, coverSrc } from '../core/model.js';
 
 const PAGE = 200;
 
-// Kept across tab switches during one visit.
+// Kept across tab switches during one visit. Opens on 持っている only (鬼さん 2026-10-25), so volumes added by
+// 「既刊を探す」 as 持っていない stay out of the way until that button is pressed.
 const state = {
-  query: '', ownership: [], readStatus: [], tagIds: [], staleOnly: false, needsReviewOnly: false,
+  query: '', ownership: ['owned'], readStatus: [], tagIds: [], staleOnly: false, needsReviewOnly: false,
   view: 'books', order: 'kana',
 };
 
@@ -44,7 +45,7 @@ export function displayTitle(book) {
 export function mount(container, ctx) {
   const { db, lookup } = ctx;
   const params = new URLSearchParams(location.hash.split('?')[1] ?? '');
-  if (params.get('review') === '1') { Object.assign(state, { needsReviewOnly: true, query: '' }); history.replaceState(null, '', '#shelf'); }
+  if (params.get('review') === '1') { Object.assign(state, { needsReviewOnly: true, query: '', ownership: [] }); history.replaceState(null, '', '#shelf'); }
 
   let books = [];
   let tags = [];

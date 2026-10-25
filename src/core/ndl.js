@@ -1,6 +1,6 @@
 // National Diet Library (NDLサーチ) OpenSearch: URLs and parsing (spec §5).
 
-import { cleanNdlName } from './normalize.js';
+import { cleanNdlName, stripAuthorRole } from './normalize.js';
 import { parseVolume, splitTitleVolume } from './volume.js';
 import { toIsbn13 } from './isbn.js';
 
@@ -18,6 +18,16 @@ export function ndlTitleSearchUrl(title, author = '', cnt = 20) {
   const parts = [`title=${encodeURIComponent(title)}`];
   if (author) parts.push(`creator=${encodeURIComponent(author)}`);
   parts.push(`cnt=${cnt}`);
+  return `${BASE}?${parts.join('&')}`;
+}
+
+// Every volume of one work: NDL returns spin-offs and guides too, so ask for a big page (pickSeriesVolumes sorts it out).
+export function ndlSeriesSearchUrl({ title, author = '', publisher = '' }) {
+  const parts = [`title=${encodeURIComponent(title)}`];
+  const name = stripAuthorRole(author);
+  if (name) parts.push(`creator=${encodeURIComponent(name)}`);
+  if (publisher) parts.push(`publisher=${encodeURIComponent(publisher)}`);
+  parts.push('cnt=500');
   return `${BASE}?${parts.join('&')}`;
 }
 

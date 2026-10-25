@@ -5,6 +5,7 @@ import { coverEl, displayTitle } from './shelf.js';
 import { LABELS, newBook, todayStr } from '../core/model.js';
 import { toIsbn13, isMagazineCode, magazineBase, magazineKey } from '../core/isbn.js';
 import { workKeyOf } from '../core/volume.js';
+import { pickSeriesVolumes } from '../core/series.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { icon } from './icons.js';
 import { pickPhoto } from './photo.js';
@@ -212,6 +213,74 @@ export async function openDetail(bookId, ctx) {
     openDetail(created.id, ctx);
   }
 
+  // 「この作品の既刊を探す」: the volumes NDL knows that are not registered yet, added as 持っていない after a check.
+  async function findSeries() {
+    const status = h('p', { class: 'muted' }, '国立国会図書館で探しています…（巻数の多い作品は20秒ほどかかります）');
+    const body = h('div', {}, status);
+    const listSheet = sheet(body, { title: 'この作品の既刊', thumbClose: true });
+    const workTitle = book.workTitle || book.title;
+    const siblings = await db.booksByWorkKey(book.workKey);
+    let items;
+    try {
+      items = await lookup.searchSeries({ title: workTitle, author: book.authors?.[0] ?? '', publisher: book.publisher });
+    } catch (err) {
+      status.textContent = err.message === 'offline' ? '電波がないため探せません。電波のある場所でもう一度押してください。' : 'うまく探せませんでした。少し時間をおいてもう一度押してください。';
+      return;
+    }
+    const vols = pickSeriesVolumes(items, {
+      workKey: book.workKey,
+      refIsbns: siblings.map(b => b.isbn).filter(Boolean),
+      haveVolumes: new Set(siblings.map(b => b.volume).filter(v => v !== null && v !== undefined)),
+      haveIsbns: new Set(siblings.map(b => b.isbn).filter(Boolean)),
+    });
+    if (!vols.length) {
+      status.textContent = 'まだ登録していない巻は見つかりませんでした。出たばかりの巻は、国立国会図書館に載るまで少しかかることがあります。';
+      return;
+    }
+    const picked = new Set(vols.map(v => v.volume));
+    const submit = h('button', { class: 'btn primary wide', style: { marginTop: '16px' } });
+    const updateSubmit = () => {
+      submit.textContent = `選んだ${picked.size}冊を「持っていない」で登録`;
+      submit.disabled = !picked.size;
+    };
+    const rows = vols.map(v => {
+      const box = h('input', { type: 'checkbox', checked: true });
+      box.addEventListener('change', () => { if (box.checked) picked.add(v.volume); else picked.delete(v.volume); updateSubmit(); });
+      return h('li', {}, h('label', { class: 'check-row' }, box,
+        h('span', { class: 'check-title' }, `${v.volume}巻`),
+        h('span', { class: 'muted small' }, formatDate(v.issued) || '')));
+    });
+    const setAll = on => {
+      for (const li of rows) li.querySelector('input').checked = on;
+      picked.clear();
+      if (on) vols.forEach(v => picked.add(v.volume));
+      updateSubmit();
+    };
+    submit.addEventListener('click', async () => {
+      submit.disabled = true;
+      for (const v of vols.filter(x => picked.has(x.volume))) {
+        await db.putBook(newBook({
+          isbn: v.isbn, title: v.title.replace(/\s+=\s+.*$/, ''), titleKana: v.titleKana,
+          authors: [...v.authors], authorsKana: [...v.authorsKana], publisher: v.publisher, issued: v.issued,
+          pages: v.pages, price: v.price, volume: v.volume, volumeLabel: v.volumeLabel,
+          workTitle, workKey: book.workKey, tagIds: [...book.tagIds],
+          ownership: 'not_owned', readStatus: 'unread', lookup: 'ok',
+        }));
+      }
+      changed = true;
+      toast(`${picked.size}冊を「持っていない」で登録しました`);
+      listSheet.close();
+    });
+    updateSubmit();
+    fill(body,
+      h('p', {}, `まだ登録していない巻が${vols.length}冊あります。持っていない巻にチェックを付けたまま登録してください。`),
+      h('div', { class: 'row-buttons' },
+        h('button', { class: 'btn', onClick: () => setAll(true) }, '全部選ぶ'),
+        h('button', { class: 'btn', onClick: () => setAll(false) }, '全部外す')),
+      h('ul', { class: 'check-list' }, rows),
+      submit);
+  }
+
   function render() {
     renderHead();
     renderTags();
@@ -237,6 +306,8 @@ export async function openDetail(bookId, ctx) {
         h('button', { class: 'btn', onClick: openEdit }, '情報を直す'),
         h('button', { class: 'btn', disabled: !book.isbn, onClick: () => { lookup.refetch(book.id); toast('本の情報を取り直しています'); } }, '本の情報を取り直す')),
       book.lookup === 'manual' ? h('button', { class: 'btn wide', style: { marginTop: '8px' }, onClick: addNextVolume }, 'この作品の次の巻を追加') : null,
+      book.volume !== null && book.volume !== undefined && book.workKey && !isMagazineCode(book.isbn ?? '')
+        ? h('button', { class: 'btn wide', style: { marginTop: '8px' }, onClick: findSeries }, 'この作品の既刊を探す') : null,
       h('button', { class: 'btn danger wide', style: { marginTop: '16px' }, onClick: async () => {
         if (!(await confirmDialog(`「${displayTitle(book)}」を削除します。元に戻せません。`, '削除する'))) return;
         await db.deleteBook(book.id);

@@ -306,6 +306,10 @@ details.card[open] > summary::after { content: '▴'; }
   display: flex; align-items: center; justify-content: space-between; padding: 0 6px; color: var(--ink);
 }
 .pick-list .icon { color: var(--accent); }
+.check-list { list-style: none; margin: 12px 0 0; padding: 0; }
+.check-row { display: flex; align-items: center; gap: 14px; min-height: 52px; padding: 0 6px; border-bottom: 1px solid var(--line, rgba(0,0,0,.08)); cursor: pointer; }
+.check-row input { width: 22px; height: 22px; accent-color: var(--accent); flex: 0 0 auto; }
+.check-row .check-title { flex: 1; font-size: 16px; }
 .head-action { border: 0; background: transparent; color: var(--accent-ink); font-weight: 800; font-size: 17px; min-height: 48px; cursor: pointer; justify-self: end; }
 .sheet-action { display: flex; justify-content: flex-end; }
 

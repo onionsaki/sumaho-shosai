@@ -7,6 +7,7 @@ import { classifyBarcode, toIsbn13 } from '../core/isbn.js';
 import { createConfirmer } from '../core/confirm.js';
 import { applyScan } from '../core/session.js';
 import { checkResult } from '../core/check.js';
+import { summarizeVolumes } from '../core/series.js';
 import { workKeyOf } from '../core/volume.js';
 import { newBook, todayStr, LABELS } from '../core/model.js';
 import { openTagPicker, tagSummary } from './tags.js';
@@ -231,9 +232,11 @@ export function mount(container, ctx) {
       if (!work) return [];
       const lines = [];
       if (work.summary.text) lines.push(`この作品：${work.summary.text}巻を持っている`);
-      const missing = [...work.summary.missing];
-      if (book && book.ownership !== 'owned' && book.volume !== null && !missing.includes(book.volume)) missing.push(book.volume);
-      if (missing.length) lines.push(`${missing.sort((a, b) => a - b).join('、')}巻は持っていない`);
+      // Gaps between owned volumes, plus volumes registered as 持っていない (「既刊を探す」 adds later ones).
+      const missing = [...work.summary.missing, ...(work.notOwnedVolumes ?? [])];
+      if (book && book.ownership !== 'owned' && book.volume !== null) missing.push(book.volume);
+      const text = summarizeVolumes(missing).text.replace(/, /g, '、');
+      if (text) lines.push(`${text}巻は持っていない`);
       return lines.map(t => h('div', { class: 'work' }, t));
     };
 

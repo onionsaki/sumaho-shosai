@@ -166,7 +166,7 @@ export function mount(container, ctx) {
     fill(container, 
       h('div', { class: 'card', style: { marginTop: '6px' } },
         h('div', { class: 'about-name' }, '自宅の書斎をスマホに入れよう'),
-        h('div', { class: 'muted small' }, '略して「スマホ書斎」。持っている本とマンガの棚卸し帳')),
+        h('div', { class: 'muted small' }, '所有している書籍、漫画、雑誌などを家から離れても参照できるアプリ。略して『スマホ書斎』。')),
 
       h('div', { class: 'section-title' }, '色'),
       themePick,

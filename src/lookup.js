@@ -1,7 +1,7 @@
 // Serial metadata lookup queue (spec §5 v1 の方針, §6).
 // NDL is asked one request at a time with a minimum gap; openBD fills covers and gaps.
 
-import { ndlIsbnUrl, ndlTitleSearchUrl, parseNdlOpenSearch, pickBestNdlItem } from './core/ndl.js';
+import { ndlIsbnUrl, ndlTitleSearchUrl, ndlSeriesSearchUrl, parseNdlOpenSearch, pickBestNdlItem } from './core/ndl.js';
 import { openBdUrl, parseOpenBd } from './core/openbd.js';
 import { mergeBookInfo } from './core/merge.js';
 import { rakutenIsbnUrl, parseRakutenCover, rakutenMagazineUrl, parseRakutenMagazine } from './core/rakuten.js';
@@ -242,6 +242,16 @@ export function createLookupQueue({
         byIsbn.set(item.isbn, [...(byIsbn.get(item.isbn) ?? []), item]);
       }
       return [...[...byIsbn.values()].map(pickBestNdlItem), ...singles];
+    },
+    // Every NDL record for one work (spin-offs included); pickSeriesVolumes keeps the main volumes.
+    async searchSeries({ title, author = '', publisher = '' }) {
+      let text;
+      try {
+        text = await ndlFetch(ndlSeriesSearchUrl({ title, author, publisher }));
+      } catch (err) {
+        throw err instanceof OfflineError ? err : new Error('failed');
+      }
+      return text ? parseNdlOpenSearch(text, DOMParserImpl) : [];
     },
     // Adds a Rakuten cover to a saved book that has none. Returns true when one was added.
     async fillCover(id) {
