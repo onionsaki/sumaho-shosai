@@ -11,7 +11,7 @@ import { icon } from './icons.js';
 import { pickPhoto } from './photo.js';
 
 const OWNERSHIP_OPTIONS = Object.entries(LABELS.ownership);
-const READ_OPTIONS = [['unread', 'まだ'], ['reading', '読書中'], ['read', '読んだ']];
+const READ_OPTIONS = Object.entries(LABELS.read);
 const FORMAT_OPTIONS = Object.entries(LABELS.format);
 
 export async function openDetail(bookId, ctx) {

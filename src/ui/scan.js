@@ -15,7 +15,7 @@ import { icon } from './icons.js';
 
 const MODES = [['register', '登録（片付け）'], ['check', '確認（本屋）']];
 const OWNERSHIP_OPTIONS = [['owned', '持っている'], ['released', '手放した'], ['not_owned', '持っていない']];
-const READ_OPTIONS = [['read', '読んだ'], ['reading', '読書中'], ['unread', 'まだ']];
+const READ_OPTIONS = ['read', 'reading', 'unread'].map(v => [v, LABELS.read[v]]);
 
 export function mount(container, ctx) {
   const { db, lookup } = ctx;

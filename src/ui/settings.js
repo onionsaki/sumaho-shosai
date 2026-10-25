@@ -1,9 +1,9 @@
 // 設定 tab: tags, stale rule, CSV, backup, stats (spec §4-6, §6).
 
-import { h, fill, toast, confirmDialog, downloadText, formatDate, sheet } from './dom.js';
+import { h, fill, toast, confirmDialog, downloadText, formatDate, sheet, segmented } from './dom.js';
 import { booksToCsv, csvFileName, parseCsv, rowsToBooks } from '../core/csv.js';
 import { makeBackup, validateBackup, backupFileName } from '../core/backup.js';
-import { ownedPriceSum, countOwned } from '../core/stats.js';
+import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami, SHELF_ROOM } from '../core/stats.js';
 import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
 
@@ -26,9 +26,10 @@ export function mount(container, ctx) {
   let openTagsOnRender = false; // keep タグの整理 open after editing a tag
 
   async function render() {
-    const [books, tags, examTagId, staleYears, lastBackupAt, theme, rakutenAppId, rakutenAccessKey] = await Promise.all([
+    const [books, tags, examTagId, staleYears, lastBackupAt, theme, rakutenAppId, rakutenAccessKey, tsundokuSetting, shelfRoom] = await Promise.all([
       db.allBooks(), db.allTags(), db.getSetting('examTagId'), db.getSetting('staleYears'), db.getSetting('lastBackupAt'),
       db.getSetting('theme'), db.getSetting('rakutenAppId'), db.getSetting('rakutenAccessKey'),
+      db.getSetting('tsundokuTagId'), db.getSetting('shelfRoom'),
     ]);
     let persisted = null;
     try { persisted = await navigator.storage?.persisted?.(); } catch { persisted = null; }
@@ -105,6 +106,33 @@ export function mount(container, ctx) {
     const yearsSelect = h('select', { onChange: e => db.setSetting('staleYears', Number(e.target.value)) },
       Array.from({ length: 10 }, (_, i) => i + 1).map(n => h('option', { value: n, selected: n === (staleYears ?? 2) }, `${n}年`)));
 
+    // --- 蔵書のすがた: how many books, seen from several angles ---
+    // Until a tag is chosen, a tag called 積読 is used if there is one.
+    const chosen = tags.some(t => t.id === tsundokuSetting) ? tsundokuSetting : null; // a deleted tag counts as not chosen
+    const tsundokuTagId = chosen ?? tags.find(t => t.name === '積読')?.id ?? '';
+    const rate = tsundokuRate(books, tsundokuTagId);
+    const tsundokuSelect = h('select', { onChange: async e => { await db.setSetting('tsundokuTagId', e.target.value); render(); } },
+      h('option', { value: '' }, '（タグを選ぶ）'),
+      tags.map(t => h('option', { value: t.id, selected: t.id === tsundokuTagId }, t.name)));
+    const noPrice = ownedWithoutPrice(books);
+    const tatami = floorTatami(books);
+    const statRow = (label, value, note) => h('div', { class: 'stat-block' },
+      h('div', { class: 'stat' }, h('span', {}, label), h('span', { class: 'stat-value' }, value)),
+      note ? h('div', { class: 'muted small stat-note' }, note) : null);
+    const paperCount = books.filter(b => b.ownership === 'owned' && b.format !== 'ebook').length;
+    const sugata = h('div', { class: 'card' },
+      statRow('持っている本', `${countOwned(books).toLocaleString()}冊`,
+        `紙 ${paperCount.toLocaleString()}冊・電子 ${(countOwned(books) - paperCount).toLocaleString()}冊`),
+      statRow('積読率', rate ? `${rate.percent}%` : '—',
+        h('span', {}, rate ? `紙の本 ${rate.total.toLocaleString()}冊のうち ${rate.count.toLocaleString()}冊。` : '', 'タグ：', tsundokuSelect)),
+      statRow('本に掛けたお金', `${ownedPriceSum(books).toLocaleString()}円`,
+        `持っている本の定価（税抜）の合計${noPrice ? `。定価の分からない本が${noPrice.toLocaleString()}冊あるので、実際はもう少し多めです` : ''}`),
+      statRow('床に並べると', tatami < 0.1 ? '畳 0.1枚分未満' : `畳 ${tatami < 10 ? tatami.toFixed(1) : Math.round(tatami)}枚分`,
+        '紙の本を表紙を上にして床に並べた広さ。1冊を四六判（12.8×18.8cm）として数えた、だいたいの目安です'),
+      h('div', { class: 'stat-block' },
+        h('div', { class: 'stat' }, h('span', {}, '本棚の空き'), h('span', { class: 'muted small' }, '自分で選ぶ')),
+        segmented(SHELF_ROOM, shelfRoom ?? '', v => db.setSetting('shelfRoom', v))));
+
     // --- import / backup ---
     const csvInput = filePicker('.csv,text/csv', async file => {
       try {
@@ -171,10 +199,11 @@ export function mount(container, ctx) {
       h('div', { class: 'section-title' }, '色'),
       themePick,
 
-      h('div', { class: 'section-title' }, '情報'),
+      h('div', { class: 'section-title' }, '蔵書のすがた'),
+      sugata,
+
+      h('div', { class: 'section-title' }, 'データ'),
       h('div', { class: 'card' },
-        h('div', { class: 'stat' }, h('span', {}, '持っている本'), h('span', {}, `${countOwned(books).toLocaleString()}冊`)),
-        h('div', { class: 'stat' }, h('span', {}, '持っている本の定価の合計'), h('span', {}, `${ownedPriceSum(books).toLocaleString()}円`)),
         h('div', { class: 'stat' }, h('span', {}, '登録の合計'), h('span', {}, `${books.length.toLocaleString()}冊`)),
         h('div', { class: 'stat' }, h('span', {}, 'データの保護'), h('span', {}, persisted === null ? '不明' : persisted ? '有効' : '無効'))),
 

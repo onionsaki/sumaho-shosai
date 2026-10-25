@@ -20,7 +20,7 @@ test('csv writes labels, joins and dates', () => {
     updatedAt: '2026-10-25T03:00:00.000Z', readAt: '2026-10-24',
   });
   const line = booksToCsv([b], tags).split('\r\n')[1];
-  assert.equal(line, '9784088725093,ONE PIECE,ワンピース,尾田栄一郎、別の人,集英社,1997-12,207,410,ONE PIECE,1,紙,持っている,読んだ,マンガ、試験用,,2026-10-24,2026-10-24,,2026-10-25');
+  assert.equal(line, '9784088725093,ONE PIECE,ワンピース,尾田栄一郎、別の人,集英社,1997-12,207,410,ONE PIECE,1,紙,持っている,読了,マンガ、試験用,,2026-10-24,2026-10-24,,2026-10-25');
 });
 
 test('csv round-trip keeps tricky memo', () => {

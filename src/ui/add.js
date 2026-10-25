@@ -9,7 +9,7 @@ import { OfflineError } from '../lookup.js';
 import { icon } from './icons.js';
 import { pickPhoto } from './photo.js';
 
-const READ_OPTIONS = [['unread', 'まだ'], ['reading', '読書中'], ['read', '読んだ']];
+const READ_OPTIONS = Object.entries(LABELS.read);
 
 export function openAdd(ctx) {
   const { db, lookup } = ctx;

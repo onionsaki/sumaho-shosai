@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { filterBooks, sortBooks } from '../src/core/search.js';
 import { isStale } from '../src/core/stale.js';
-import { ownedPriceSum, countOwned } from '../src/core/stats.js';
+import { ownedPriceSum, countOwned, tsundokuRate, floorTatami, ownedWithoutPrice } from '../src/core/stats.js';
 import { newBook } from '../src/core/model.js';
 
 const ctx = { examTagId: 'exam', staleYears: 2, today: '2026-10-24' };
@@ -83,6 +83,22 @@ test('ownedPriceSum and countOwned', () => {
   const books = [newBook({ price: 1400 }), newBook({ price: 500, ownership: 'released' }), newBook({ price: null }), newBook({ price: 700, format: 'ebook' })];
   assert.equal(ownedPriceSum(books), 2100);
   assert.equal(countOwned(books), 3);
+});
+
+test('積読率 counts owned paper books with the chosen tag', () => {
+  const books = [
+    newBook({ tagIds: ['tsun'] }), newBook({ tagIds: ['tsun'] }), newBook(), newBook(),
+    newBook({ tagIds: ['tsun'], format: 'ebook' }), newBook({ tagIds: ['tsun'], ownership: 'not_owned' }),
+  ];
+  assert.deepEqual(tsundokuRate(books, 'tsun'), { count: 2, total: 4, percent: 50 });
+  assert.equal(tsundokuRate(books, ''), null);
+  assert.equal(tsundokuRate([], 'tsun'), null);
+});
+
+test('floor area: about 67 owned paper books to one 畳; books without a price are counted', () => {
+  const books = Array.from({ length: 67 }, () => newBook({ price: null })).concat(newBook({ format: 'ebook', price: 500 }));
+  assert.ok(Math.abs(floorTatami(books) - 1) < 0.02);
+  assert.equal(ownedWithoutPrice(books), 67);
 });
 
 test('oldest sort is registration date ascending', () => {

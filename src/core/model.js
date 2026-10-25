@@ -6,7 +6,7 @@ export const FORMATS = ['paper', 'ebook'];
 
 export const LABELS = {
   ownership: { owned: '持っている', released: '手放した', not_owned: '持っていない' },
-  read: { unread: 'まだ', reading: '読書中', read: '読んだ' },
+  read: { unread: '未読', reading: '読書中', read: '読了' },
   format: { paper: '紙', ebook: '電子' },
 };
 

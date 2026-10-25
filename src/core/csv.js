@@ -51,7 +51,11 @@ export function parseCsv(text) {
 }
 
 const invert = obj => Object.fromEntries(Object.entries(obj).map(([k, v]) => [v, k]));
-const FROM = { format: invert(LABELS.format), ownership: invert(LABELS.ownership), read: invert(LABELS.read) };
+// 「まだ」「読んだ」 are the labels before 2026-10-25; older CSV files still use them.
+const FROM = {
+  format: invert(LABELS.format), ownership: invert(LABELS.ownership),
+  read: { まだ: 'unread', 読んだ: 'read', ...invert(LABELS.read) },
+};
 const num = s => (s === '' || s === undefined || Number.isNaN(Number(s)) ? null : Number(s));
 const split = s => String(s ?? '').split(JOIN).map(x => x.trim()).filter(Boolean);
 const dateToIso = d => {
