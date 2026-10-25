@@ -269,6 +269,9 @@ label.field input:focus { border-bottom-color: var(--accent); box-shadow: none; 
 .tag-row { display: flex; gap: 6px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .tag-row .name { flex: 1; }
 .tag-row .icon-btn { font-size: 18px; min-width: 40px; min-height: 40px; }
+.order-row { display: grid; grid-template-columns: 1fr 48px 48px; align-items: center; gap: 6px; min-height: 52px; border-bottom: 1px solid var(--line); }
+.order-row .name { font-size: 16px; }
+.order-row .icon-btn { font-size: 18px; min-width: 44px; min-height: 44px; }
 .rule-row { display: grid; grid-template-columns: 1fr 88px 40px; gap: 8px; align-items: center; margin-top: 8px; }
 .rule-row select { min-width: 0; }
 .rule-row .icon-btn { font-size: 18px; min-width: 40px; min-height: 40px; }

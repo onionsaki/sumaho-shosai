@@ -7,6 +7,7 @@ import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami
 import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
 import { isStale } from '../core/stale.js';
+import { applyOrder, moveItem } from '../core/order.js';
 
 const readFile = file => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -33,6 +34,7 @@ export function mount(container, ctx) {
       db.getSetting('theme'), db.getSetting('rakutenAppId'), db.getSetting('rakutenAccessKey'),
       db.getSetting('tsundokuTagId'), db.getSetting('shelfRoom'),
     ]);
+    const sectionOrder = await db.getSetting('settingsOrder');
     let persisted = null;
     try { persisted = await navigator.storage?.persisted?.(); } catch { persisted = null; }
     if (disposed) return;
@@ -203,24 +205,15 @@ export function mount(container, ctx) {
       render();
     } }, `表紙のない本に表紙を付ける（${noCover.length}冊・約${Math.max(1, Math.ceil(noCover.length / 60))}分）`);
 
-    fill(container, 
-      h('div', { class: 'card', style: { marginTop: '6px' } },
-        h('div', { class: 'about-name' }, '自宅の書斎をスマホに入れよう'),
-        h('div', { class: 'muted small' }, '所有している書籍、漫画、雑誌などを家から離れても参照できるアプリ。略して『スマホ書斎』。')),
-
-      h('div', { class: 'section-title' }, '色'),
-      themePick,
-
-      h('div', { class: 'section-title' }, '蔵書のすがた'),
-      sugata,
-
-      h('div', { class: 'section-title' }, 'データ'),
-      h('div', { class: 'card' },
+    // Sections in the order 鬼さん chose (設定の並び順); the name card and the credits stay put.
+    const titled = (title, ...body) => [h('div', { class: 'section-title' }, title), ...body];
+    const sections = {
+      color: ['色', () => titled('色', themePick)],
+      sugata: ['蔵書のすがた', () => titled('蔵書のすがた', sugata)],
+      data: ['データ', () => titled('データ', h('div', { class: 'card' },
         h('div', { class: 'stat' }, h('span', {}, '登録の合計'), h('span', {}, `${books.length.toLocaleString()}冊`)),
-        h('div', { class: 'stat' }, h('span', {}, 'データの保護'), h('span', {}, persisted === null ? '不明' : persisted ? '有効' : '無効'))),
-
-      h('div', { class: 'section-title' }, 'バックアップ'),
-      h('div', { class: 'card' },
+        h('div', { class: 'stat' }, h('span', {}, 'データの保護'), h('span', {}, persisted === null ? '不明' : persisted ? '有効' : '無効'))))],
+      backup: ['バックアップ', () => titled('バックアップ', h('div', { class: 'card' },
         h('p', { class: 'small', style: { marginTop: 0 } }, `前回：${lastBackupAt ? formatDate(todayStr(new Date(lastBackupAt))) : 'まだありません'}`),
         h('p', { class: 'muted small' }, 'データはこのスマホの中だけにあります。ときどきバックアップを作って、Googleドライブなどに保存してください。'),
         h('div', { class: 'row-buttons' },
@@ -232,18 +225,14 @@ export function mount(container, ctx) {
             render();
           } }, 'バックアップを作る'),
           h('button', { class: 'btn', onClick: () => backupInput.click() }, 'バックアップから戻す')),
-        backupInput),
-
-      h('div', { class: 'section-title' }, 'CSV'),
-      h('div', { class: 'card' },
+        backupInput))],
+      csv: ['CSV', () => titled('CSV', h('div', { class: 'card' },
         h('div', { class: 'row-buttons' },
           h('button', { class: 'btn', onClick: () => downloadText(csvFileName(todayStr()), booksToCsv(books, tags), 'text/csv') }, '全部をCSVで書き出す'),
           h('button', { class: 'btn', onClick: () => csvInput.click() }, 'CSVを取り込む')),
         h('p', { class: 'muted small' }, '取り込みはスマホ書斎で書き出したCSVの形に限ります。今の本棚に追加され、同じISBNの本は飛ばします。'),
-        csvInput),
-
-      h('div', { class: 'section-title' }, '本の表紙（楽天ブックス）'),
-      h('div', { class: 'card' },
+        csvInput))],
+      rakuten: ['本の表紙（楽天ブックス）', () => titled('本の表紙（楽天ブックス）', h('div', { class: 'card' },
         h('p', { class: 'muted small', style: { marginTop: 0 } }, '楽天ウェブサービスで作ったアプリIDとアクセスキーを入れると、表紙が出ない本を楽天から探します。キーはこのスマホの中だけに保存します。'),
         h('label', { class: 'field' }, h('span', {}, 'アプリID'), appIdInput),
         h('label', { class: 'field' }, h('span', {}, 'アクセスキー'), keyInput),
@@ -253,18 +242,47 @@ export function mount(container, ctx) {
           toast(appIdInput.value.trim() && keyInput.value.trim() ? '保存しました。これから登録する本の表紙も楽天から探します' : '楽天を使わない設定にしました');
           render();
         } }, '保存する'),
-        fillBtn),
-
-      h('div', { class: 'section-title' }, '古いかもの判定'),
-      h('div', { class: 'card' },
+        fillBtn))],
+      stale: ['古いかもの判定', () => titled('古いかもの判定', h('div', { class: 'card' },
         h('p', { class: 'muted small', style: { marginTop: 0 } }, 'このタグの本は、発行からこの年数がたったら「古いかも」と出します'),
         ruleRows.length ? ruleRows : h('p', { class: 'small' }, '（使っていません）'),
-        addRule),
-
-      h('details', { class: 'card', style: { marginTop: '22px' }, open: openTagsOnRender, onToggle: e => { openTagsOnRender = e.target.open; } },
+        addRule))],
+      tags: ['タグの整理', () => [h('details', { class: 'card', style: { marginTop: '22px' }, open: openTagsOnRender, onToggle: e => { openTagsOnRender = e.target.open; } },
         h('summary', { style: { cursor: 'pointer', fontWeight: '700', minHeight: '40px' } }, `タグの整理（${tags.length}個）`),
         tagAdd,
-        tagRows),
+        tagRows)]],
+    };
+    const order = applyOrder(Object.keys(sections), sectionOrder);
+
+    function openOrderSheet() {
+      let ids = [...order];
+      const listEl = h('ul', { class: 'pick-list' });
+      const draw = () => fill(listEl, ...ids.map((id, i) => h('li', { class: 'order-row' },
+        h('span', { class: 'name' }, sections[id][0]),
+        h('button', { class: 'icon-btn', 'aria-label': '上へ', disabled: i === 0, onClick: () => move(i, -1) }, '↑'),
+        h('button', { class: 'icon-btn', 'aria-label': '下へ', disabled: i === ids.length - 1, onClick: () => move(i, 1) }, '↓'))));
+      async function move(i, d) {
+        ids = moveItem(ids, i, d);
+        draw();
+        await db.setSetting('settingsOrder', ids);
+        render();
+      }
+      draw();
+      sheet(h('div', {}, listEl,
+        h('button', { class: 'btn wide', style: { marginTop: '14px' }, onClick: async () => {
+          ids = Object.keys(sections);
+          draw();
+          await db.setSetting('settingsOrder', ids);
+          render();
+        } }, '最初の並びに戻す')), { title: '設定の並び順', thumbClose: true });
+    }
+
+    fill(container,
+      h('div', { class: 'card', style: { marginTop: '6px' } },
+        h('div', { class: 'about-name' }, '自宅の書斎をスマホに入れよう'),
+        h('div', { class: 'muted small' }, '所有している書籍、漫画、雑誌などを家から離れても参照できるアプリ。略して『スマホ書斎』。')),
+      ...order.flatMap(id => sections[id][1]()),
+      h('button', { class: 'btn wide', style: { marginTop: '24px' }, onClick: openOrderSheet }, '設定の並び順を変える'),
 
       h('p', { class: 'muted small', style: { marginTop: '24px' } },
         '本の情報は、国立国会図書館サーチのAPIと openBD を利用して取得しています。', rakutenAppId ? ' 表紙の一部は楽天ブックスから取得しています（Supported by Rakuten Developers）。' : ''),
