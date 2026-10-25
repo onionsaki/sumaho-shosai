@@ -1,9 +1,11 @@
 // IndexedDB store: books, tags, settings, photos (spec §3, §6).
 // v2 (2026-10-25): photos moved out of the book records so loading the shelf stays light with thousands of books.
+// v3 (2026-10-25): 欲しい本 (wishes), kept apart from the shelf.
 
 import { SEED_TAGS, newId } from './core/model.js';
 import { normalizeForSearch } from './core/normalize.js';
 import { defaultStaleRules } from './core/stale.js';
+import { markBought, isOpenWish } from './core/wish.js';
 
 const req = r => new Promise((resolve, reject) => {
   r.onsuccess = () => resolve(r.result);
@@ -56,10 +58,11 @@ function upgrade(db, oldVersion, tx) {
       cursor.continue();
     };
   }
+  if (oldVersion < 3) db.createObjectStore('wishes', { keyPath: 'id' }).createIndex('isbn', 'isbn');
 }
 
 export async function openDb(name = 'sumaho-shosai') {
-  const open = indexedDB.open(name, 2);
+  const open = indexedDB.open(name, 3);
   open.onupgradeneeded = e => upgrade(open.result, e.oldVersion, open.transaction);
   const idb = await req(open);
 
@@ -79,10 +82,30 @@ export async function openDb(name = 'sumaho-shosai') {
     },
     async putBook(book) {
       const copy = cleanBook(book);
-      const { tx, get } = store('books', 'readwrite');
+      const { tx, get } = store(['books', 'wishes'], 'readwrite');
       get('books').put(copy);
+      // A wanted book that is now 持っている moves to 買ったもの.
+      if (copy.ownership === 'owned' && copy.isbn) {
+        const wishes = await req(get('wishes').index('isbn').getAll(copy.isbn));
+        for (const w of wishes) if (isOpenWish(w)) get('wishes').put(markBought(w, copy.id));
+      }
       await done(tx);
       return copy;
+    },
+    async allWishes() {
+      return req(store('wishes').get('wishes').getAll());
+    },
+    async putWish(wish) {
+      const copy = { ...wish, updatedAt: new Date().toISOString() };
+      const { tx, get } = store('wishes', 'readwrite');
+      get('wishes').put(copy);
+      await done(tx);
+      return copy;
+    },
+    async deleteWish(id) {
+      const { tx, get } = store('wishes', 'readwrite');
+      get('wishes').delete(id);
+      await done(tx);
     },
     async deleteBook(id) {
       const { tx, get } = store(['books', 'photos'], 'readwrite');
@@ -198,11 +221,12 @@ export async function openDb(name = 'sumaho-shosai') {
       return rules;
     },
 
-    async replaceAll({ books, tags, settings, photos = [] }) {
-      const { tx, get } = store(['books', 'tags', 'settings', 'photos'], 'readwrite');
+    async replaceAll({ books, tags, settings, photos = [], wishes = [] }) {
+      const { tx, get } = store(['books', 'tags', 'settings', 'photos', 'wishes'], 'readwrite');
       const finished = done(tx);
       try {
-        for (const n of ['books', 'tags', 'settings', 'photos']) get(n).clear();
+        for (const n of ['books', 'tags', 'settings', 'photos', 'wishes']) get(n).clear();
+        for (const w of wishes) get('wishes').put(w);
         for (const book of books) get('books').put(stripIsbn(book));
         for (const tag of tags) get('tags').put(tag);
         for (const row of settings) get('settings').put(row);

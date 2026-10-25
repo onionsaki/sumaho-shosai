@@ -4,8 +4,8 @@ const APP = 'sumaho-shosai';
 const VERSION = 1;
 const DAY = 86400000;
 
-export function makeBackup({ books, tags, settings, photos = [] }, nowIso) {
-  return { app: APP, version: VERSION, exportedAt: nowIso, books, tags, settings, photos };
+export function makeBackup({ books, tags, settings, photos = [], wishes = [] }, nowIso) {
+  return { app: APP, version: VERSION, exportedAt: nowIso, books, tags, settings, photos, wishes };
 }
 
 export function validateBackup(obj) {
@@ -25,6 +25,10 @@ export function validateBackup(obj) {
   // photos were added 2026-10-25; backups made before then have none
   if (obj.photos !== undefined && !(Array.isArray(obj.photos) && obj.photos.every(p => p && typeof p.id === 'string' && typeof p.data === 'string'))) {
     return { ok: false, reason: '写真のデータが壊れています' };
+  }
+  // wishes (欲しい本) were added 2026-10-25 as well
+  if (obj.wishes !== undefined && !(Array.isArray(obj.wishes) && obj.wishes.every(w => w && typeof w.id === 'string' && typeof w.title === 'string'))) {
+    return { ok: false, reason: '欲しい本のデータが壊れています' };
   }
   return { ok: true };
 }

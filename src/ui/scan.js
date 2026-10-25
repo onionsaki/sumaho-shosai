@@ -12,6 +12,9 @@ import { workKeyOf } from '../core/volume.js';
 import { newBook, todayStr, LABELS } from '../core/model.js';
 import { openTagPicker, tagSummary } from './tags.js';
 import { icon } from './icons.js';
+import { wishList, openWishEditor } from './wishes.js';
+import { displayTitle } from './shelf.js';
+import { newWish, openWishesFor } from '../core/wish.js';
 
 const MODES = [['register', '登録（片付け）'], ['check', '確認（本屋）']];
 const OWNERSHIP_OPTIONS = [['owned', '持っている'], ['released', '手放した'], ['not_owned', '持っていない']];
@@ -240,13 +243,10 @@ export function mount(container, ctx) {
       return lines.map(t => h('div', { class: 'work' }, t));
     };
 
-    async function addWanted(info, isbn) {
-      const saved = await db.putBook(newBook({
-        ...(info ?? {}), isbn, ownership: 'not_owned', readStatus: 'unread', lookup: info ? 'ok' : 'pending',
-      }));
-      if (!info) lookup.enqueue(saved.id);
-      toast('読みたいに追加しました');
-      fill(card);
+    // 欲しいに追加 (was 読みたいに追加 until 2026-10-25): goes to the wish list, not the shelf.
+    function addWanted(info, isbn) {
+      const title = info?.title ? displayTitle(info) : '';
+      openWishEditor(ctx, newWish({ isbn, title }), () => { fill(card); wishes.refresh(); }, true);
     }
 
     async function handle(code) {
@@ -265,7 +265,7 @@ export function mount(container, ctx) {
         owned: book ? `${formatDate(todayStr(new Date(book.createdAt)))} に登録` : '',
         owned_ebook: '',
         released: book?.releasedAt ? `（${formatDate(book.releasedAt)}）` : '',
-        not_owned: '（読みたいに登録済み）',
+        not_owned: '（本棚に「持っていない」で登録済み）',
         unregistered: navigator.onLine ? '調べています…' : '登録なし',
       }[r.status];
       const sound = { owned: 'success', owned_ebook: 'success', released: 'duplicate', not_owned: 'duplicate', unregistered: 'error' }[r.status];
@@ -278,8 +278,14 @@ export function mount(container, ctx) {
         h('button', { class: 'round-btn card-close', 'aria-label': '答えを閉じる', onClick: () => { enrichToken++; fill(card); } }, icon('close')),
         h('div', { class: 'big' }, big), titleEl, noteEl, ...workLines(book, r.work), extra));
 
-      if (r.status !== 'unregistered') return;
-      const addBtn = info => h('button', { class: 'btn', style: { marginTop: '10px' }, onClick: () => addWanted(info, code) }, '読みたいに追加');
+      const wished = r.status === 'owned' || r.status === 'owned_ebook' ? [] : openWishesFor(await db.allWishes(), code);
+      if (wished.length && r.status === 'unregistered') { titleEl.textContent = wished[0].title; noteEl.textContent = ''; }
+      for (const w of wished) {
+        extra.append(h('div', { class: 'wish-hit' }, '欲しい本に入っています', w.expect ? h('div', { class: 'small' }, `期待：${w.expect}`) : null));
+      }
+      if (wished.length || (r.status !== 'unregistered' && r.status !== 'not_owned')) return;
+      const addBtn = info => h('button', { class: 'btn', style: { marginTop: '10px' }, onClick: () => addWanted(info, code) }, '欲しいに追加');
+      if (r.status === 'not_owned') { extra.append(addBtn(book)); return; }
       if (!navigator.onLine) { extra.append(addBtn(null)); return; }
       const token = enrichToken;
       enrich(code, token, titleEl, noteEl, extra, addBtn, magazine); // not awaited: the next scan answers at once
@@ -302,11 +308,13 @@ export function mount(container, ctx) {
       extra.append(addBtn(info));
     }
 
+    const wishes = wishList(ctx);
     fill(body,
       cameraSlot,
       statusEl,
       manualEntry('確認', handle),
       card,
+      wishes.el,
     );
   }
 

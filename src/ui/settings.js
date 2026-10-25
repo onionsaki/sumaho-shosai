@@ -170,7 +170,7 @@ export function mount(container, ctx) {
       if (!check.ok) { toast(check.reason); return; }
       if (!(await confirmDialog(`今のデータを全部、このバックアップ（${data.books.length}冊、${formatDate(todayStr(new Date(data.exportedAt)))}作成）の中身に置き換えます。よろしいですか？`, '置き換える'))) return;
       try {
-        await db.replaceAll({ books: data.books, tags: data.tags, settings: data.settings, photos: data.photos ?? [] });
+        await db.replaceAll({ books: data.books, tags: data.tags, settings: data.settings, photos: data.photos ?? [], wishes: data.wishes ?? [] });
       } catch {
         toast('戻せませんでした。今のデータはそのままです');
         return;
@@ -218,7 +218,7 @@ export function mount(container, ctx) {
         h('p', { class: 'muted small' }, 'データはこのスマホの中だけにあります。ときどきバックアップを作って、Googleドライブなどに保存してください。'),
         h('div', { class: 'row-buttons' },
           h('button', { class: 'btn primary', onClick: async () => {
-            const backup = makeBackup({ books: await db.allBooks(), tags: await db.allTags(), settings: await db.allSettings(), photos: await db.allPhotos() }, new Date().toISOString());
+            const backup = makeBackup({ books: await db.allBooks(), tags: await db.allTags(), settings: await db.allSettings(), photos: await db.allPhotos(), wishes: await db.allWishes() }, new Date().toISOString());
             downloadText(backupFileName(todayStr()), JSON.stringify(backup), 'application/json');
             await db.setSetting('lastBackupAt', backup.exportedAt);
             toast('バックアップを作りました');

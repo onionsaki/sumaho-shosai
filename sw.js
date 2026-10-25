@@ -1,7 +1,7 @@
 // Service worker: cache-first app shell so the app opens without a signal (spec §7).
 // Bump VERSION and keep APP_FILES complete whenever a loaded file is added or changed.
 
-const VERSION = '24';
+const VERSION = '25';
 const CACHE = `sumaho-shosai-v${VERSION}`;
 const APP_FILES = [
   './',
@@ -47,6 +47,8 @@ const APP_FILES = [
   'src/core/stale.js',
   'src/core/stats.js',
   'src/core/order.js',
+  'src/core/wish.js',
+  'src/ui/wishes.js',
   'src/core/csv.js',
   'src/core/backup.js',
   'vendor/barcode-detector/ponyfill.js',
