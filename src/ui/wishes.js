@@ -5,10 +5,43 @@ import { icon } from './icons.js';
 import { displayTitle } from './shelf.js';
 import { newWish, splitWishes, markBought, wishCandidates, wishFromBook } from '../core/wish.js';
 import { todayStr } from '../core/model.js';
+import { OfflineError } from '../lookup.js';
 
 export function openWishEditor(ctx, wish, onSaved = () => {}, isNew = false) {
-  const { db } = ctx;
+  const { db, lookup } = ctx;
+  let isbn = wish.isbn;
   const title = h('input', { type: 'text', value: wish.title, placeholder: '書名（わかる範囲で）' });
+  const author = h('input', { type: 'text', value: wish.author ?? '', placeholder: '著者（わかれば）' });
+  const isbnNote = h('p', { class: 'muted small' });
+  const showIsbn = () => { isbnNote.textContent = isbn ? `ISBN ${isbn}　本屋で読み取ると「欲しい本」と出ます` : ''; };
+  showIsbn();
+
+  // 国立国会図書館で探す: picking a result writes the official title and author (and the ISBN) into the form.
+  const status = h('p', { class: 'muted small' });
+  const results = h('ul', { class: 'list-plain' });
+  async function search() {
+    if (!title.value.trim()) { status.textContent = '書名を入れてください（一部でよい）'; return; }
+    status.textContent = '国立国会図書館に問い合わせています…（時間がかかることがあります）';
+    fill(results);
+    try {
+      const items = await lookup.searchByTitle(title.value.trim(), author.value.trim());
+      status.textContent = items.length ? `${items.length}件見つかりました。合う本を選んでください` : '見つかりませんでした。書名を短くすると見つかることがあります';
+      fill(results, ...items.map(info => h('li', { class: 'result-item', onClick: async () => {
+        title.value = displayTitle(info);
+        author.value = (info.authors ?? []).join('、');
+        isbn = info.isbn ?? '';
+        showIsbn();
+        fill(results);
+        const held = isbn ? await db.getBookByIsbn(isbn) : null;
+        status.textContent = held?.ownership === 'owned' ? 'この本は本棚に「持っている」で登録済みです' : '書名と著者を入れました。保存を押すと残ります';
+      } },
+        h('div', { style: { fontWeight: '600' } }, displayTitle(info)),
+        h('div', { class: 'small muted' }, [(info.authors ?? []).join('、'), info.publisher, info.issued].filter(Boolean).join('・')))));
+    } catch (err) {
+      status.textContent = err instanceof OfflineError ? '電波がないため探せません' : '国立国会図書館につながりませんでした。少し待ってからもう一度お試しください';
+    }
+  }
+
   const expect = h('textarea', { rows: 3, value: wish.expect, placeholder: '例：図解が多くて、仕事の説明に使えそう' });
   const where = h('input', { type: 'text', value: wish.where, placeholder: '例：駅前の古本屋 550円' });
   const body = h('div', { class: 'form' });
@@ -16,7 +49,7 @@ export function openWishEditor(ctx, wish, onSaved = () => {}, isNew = false) {
   async function save() {
     const name = title.value.trim();
     if (!name) { toast('書名を入れてください'); return; }
-    await db.putWish({ ...wish, title: name, expect: expect.value.trim(), where: where.value.trim() });
+    await db.putWish({ ...wish, isbn, title: name, author: author.value.trim(), expect: expect.value.trim(), where: where.value.trim() });
     toast(isNew ? '欲しい本に追加しました' : '保存しました');
     s.close();
     onSaved();
@@ -24,9 +57,12 @@ export function openWishEditor(ctx, wish, onSaved = () => {}, isNew = false) {
   s.setAction('保存', save);
   fill(body,
     h('label', { class: 'field' }, h('span', {}, '書名'), title),
+    h('label', { class: 'field' }, h('span', {}, '著者'), author),
+    h('button', { class: 'btn wide', onClick: search }, '国立国会図書館で正しい書名を探す'),
+    status, results,
     h('label', { class: 'field' }, h('span', {}, '何を期待して買うか'), expect),
     h('label', { class: 'field' }, h('span', {}, '見つけた場所や値段'), where),
-    wish.isbn ? h('p', { class: 'muted small' }, `ISBN ${wish.isbn}　本屋で読み取ると「欲しい本」と出ます`) : null,
+    isbnNote,
     wish.boughtAt ? h('p', { class: 'muted small' }, `${formatDate(wish.boughtAt)} に買いました`) : null,
     h('button', { class: 'btn primary wide', style: { marginTop: '12px' }, onClick: save }, '保存'),
     !isNew && !wish.boughtAt ? h('button', { class: 'btn wide', style: { marginTop: '8px' }, onClick: async () => {
@@ -83,6 +119,7 @@ export function wishList(ctx) {
     const candidates = wishCandidates(books);
     const row = w => h('li', {}, h('button', { class: 'wish-row', onClick: () => openWishEditor(ctx, w, refresh) },
       h('span', { class: 'wish-title' }, w.title),
+      w.author ? h('span', { class: 'muted small' }, w.author) : null,
       w.expect ? h('span', { class: 'muted small wish-expect' }, w.expect) : null,
       w.where || w.boughtAt ? h('span', { class: 'muted small' }, [w.boughtAt ? `${formatDate(w.boughtAt)} 購入` : '', w.where].filter(Boolean).join('・')) : null));
     fill(el,

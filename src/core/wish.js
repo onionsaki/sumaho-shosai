@@ -10,6 +10,7 @@ export function newWish(partial = {}) {
     id: newId(),
     isbn: '',
     title: '',
+    author: '', // 国立国会図書館で探したときの正しい著者名（2026-10-26）
     expect: '', // 何を期待して買うか
     where: '', // 見つけた場所や値段
     createdAt: now,
@@ -40,4 +41,4 @@ export function wishCandidates(books) {
     .map(book => ({ book, ticked: !(book.workKey && ownedWorks.has(book.workKey) && book.volume !== null && book.volume !== undefined) }));
 }
 
-export const wishFromBook = (book, title) => newWish({ isbn: book.isbn ?? '', title, expect: book.memo ?? '', createdAt: book.createdAt });
+export const wishFromBook = (book, title) => newWish({ isbn: book.isbn ?? '', title, author: (book.authors ?? []).join('、'), expect: book.memo ?? '', createdAt: book.createdAt });

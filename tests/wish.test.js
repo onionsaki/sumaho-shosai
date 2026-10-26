@@ -29,6 +29,8 @@ test('candidates from 持っていない: volumes of a work already held start u
   const w = wishFromBook(picked, picked.title);
   assert.equal(w.expect, '図解が多そう');
   assert.equal(w.createdAt, picked.createdAt);
+  assert.equal(w.author, '');
+  assert.equal(wishFromBook(newBook({ authors: ['山田太郎', '佐藤花子'] }), 'x').author, '山田太郎、佐藤花子');
 });
 
 test('registering the book as 持っている moves its wish to 買ったもの', async () => {

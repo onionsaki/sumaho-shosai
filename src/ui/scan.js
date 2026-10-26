@@ -246,7 +246,7 @@ export function mount(container, ctx) {
     // 欲しいに追加 (was 読みたいに追加 until 2026-10-25): goes to the wish list, not the shelf.
     function addWanted(info, isbn) {
       const title = info?.title ? displayTitle(info) : '';
-      openWishEditor(ctx, newWish({ isbn, title }), () => { fill(card); wishes.refresh(); }, true);
+      openWishEditor(ctx, newWish({ isbn, title, author: (info?.authors ?? []).join('、') }), () => { fill(card); wishes.refresh(); }, true);
     }
 
     async function handle(code) {
