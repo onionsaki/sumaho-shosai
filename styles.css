@@ -412,3 +412,25 @@ label.field input, label.field select { font-size: 16px; }
 .thumb-close { position: absolute; right: 18px; bottom: calc(18px + env(safe-area-inset-bottom)); width: 58px; height: 58px; z-index: 2; box-shadow: 0 6px 16px rgba(0,0,0,.22), var(--raise-sm); }
 .thumb-close .icon { width: 26px; height: 26px; }
 .sheet.has-thumb .sheet-body { padding-bottom: calc(96px + env(safe-area-inset-bottom)); }
+
+/* 凸＝ふだん、凹＝選んでいる (鬼さん 2026-10-31). Every choice looks raised until it is picked, then pressed in.
+   The picked one also turns accent-coloured and bold, so it still reads when the shadows are faint. */
+:root { --pressed: inset 4px 4px 9px var(--sh-dark), inset -4px -4px 9px var(--sh-light), inset 0 0 0 1px var(--sh-dark); }
+.segmented { background: transparent; box-shadow: none; padding: 4px 2px; gap: 8px; }
+.seg { background: var(--card); box-shadow: var(--raise-sm); color: var(--muted); }
+.seg.on { background: var(--bg); box-shadow: var(--pressed); color: var(--accent-ink); font-weight: 700; }
+.chip, .chip.ghost { border: 0; background: var(--card); box-shadow: var(--raise-sm); color: var(--ink); border-radius: 12px; }
+.chip.ghost { color: var(--muted); }
+.chip.on { background: var(--bg); box-shadow: var(--pressed); color: var(--accent-ink); font-weight: 700; }
+.status-btn { border: 0; background: var(--card); box-shadow: var(--raise-sm); color: var(--ink); }
+.status-btn.on { background: var(--bg); box-shadow: var(--pressed); color: var(--accent-ink); }
+.theme-pick button.on { background: var(--bg); box-shadow: var(--pressed); }
+.seg:active, .chip:active, .status-btn:active { box-shadow: var(--inset); }
+
+/* No clipped words (鬼さん 2026-10-31): long button labels wrap onto a second line instead of running out. */
+.btn { white-space: normal; line-height: 1.35; text-wrap: balance; }
+p, .kv, .small, .stat span { overflow-wrap: anywhere; }
+/* A cover with no picture shows the whole title, wrapped, instead of cutting it at 8 letters. */
+.cover-name { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
+.cover.big .cover-name { -webkit-line-clamp: 6; }
+.status-btn { gap: 0 4px; padding: 4px; white-space: normal; flex-wrap: wrap; line-height: 1.2; } /* a 3-digit count drops under the label */

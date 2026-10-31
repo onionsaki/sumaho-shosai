@@ -25,7 +25,7 @@ let photoSource = null;
 export const setPhotoSource = fn => { photoSource = fn; };
 
 export function coverEl(book, big = false) {
-  const placeholder = () => h('div', { class: big ? 'cover big' : 'cover' }, (book.title || book.isbn || '？').slice(0, 8));
+  const placeholder = () => h('div', { class: big ? 'cover big' : 'cover' }, h('span', { class: 'cover-name' }, book.title || book.isbn || '？'));
   const make = src => {
     const img = h('img', { class: big ? 'cover big' : 'cover', src, alt: '', loading: 'lazy' });
     img.addEventListener('error', () => img.replaceWith(placeholder()));
@@ -55,7 +55,7 @@ export function mount(container, ctx) {
   let shown = PAGE;
   let disposed = false;
 
-  const search = h('input', { type: 'search', placeholder: '書名・著者・読み・メモで探す', value: state.query, enterkeyhint: 'search' });
+  const search = h('input', { type: 'search', placeholder: '書名・著者・メモ', value: state.query, enterkeyhint: 'search' });
   const banners = h('div');
   const filters = h('div', { class: 'status-row' });
   const active = h('div', { class: 'chips active-filters' });

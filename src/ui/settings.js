@@ -280,7 +280,7 @@ export function mount(container, ctx) {
         h('p', { class: 'muted small', style: { marginTop: 0 } }, 'このタグの本は、発行からこの年数がたったら「古いかも」と出します'),
         ruleRows.length ? ruleRows : h('p', { class: 'small' }, '（使っていません）'),
         addRule,
-        h('p', { class: 'muted small', style: { marginTop: '18px' } }, 'この分類の本も、タグがなくても同じように判定します（国立国会図書館の分類が付いた本だけ）'),
+        h('p', { class: 'muted small', style: { marginTop: '18px' } }, 'タグがなくても、この分類の本は同じように判定します。分類が付いた本だけが対象です'),
         classRows.length ? classRows : h('p', { class: 'small' }, '（使っていません）'),
         addClassRule))],
       tags: ['タグの整理', () => [h('details', { class: 'card', style: { marginTop: '22px' }, open: openTagsOnRender, onToggle: e => { openTagsOnRender = e.target.open; } },
