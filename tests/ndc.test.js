@@ -42,3 +42,16 @@ test('shelf filter by 分類, counts, and which books still need asking', () => 
   assert.equal(needsClass(manga), false);
   assert.equal(needsClass(newBook({ isbn: '4910000000000' }), code => code.startsWith('491')), false);
 });
+
+test('古いかも by 分類: 32 covers 324.5 without any tag; other classes are not caught', async () => {
+  const { isStale } = await import('../src/core/stale.js');
+  const rules = [{ classCode: '32', years: 3 }, { classCode: '345', years: 3 }];
+  const law = newBook({ ndc: '324.52', issued: '2020-04' });
+  const tax = newBook({ ndc: '345.1', issued: '2023-01' });
+  const manga = newBook({ ndc: '726.1', issued: '2000-01' });
+  assert.equal(isStale(law, rules, '2026-10-31'), true);
+  assert.equal(isStale(tax, rules, '2026-10-31'), true);
+  assert.equal(isStale({ ...tax, issued: '2024-01' }, rules, '2026-10-31'), false);
+  assert.equal(isStale(manga, rules, '2026-10-31'), false);
+  assert.equal(isStale(newBook({ issued: '2000-01' }), rules, '2026-10-31'), false);
+});

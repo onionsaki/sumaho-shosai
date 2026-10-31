@@ -31,6 +31,12 @@ export const DETAILED = [
   ['338', '金融・投資'], ['345', '税'], ['726', '漫画'], ['913', '日本の小説'],
 ];
 
+// Every 分類 that can be chosen, by code (for the 古いかも rules).
+export const ALL_CLASSES = [...DETAILED.map(([code, name]) => ({ code, name })),
+  ...Object.entries(DIVISIONS).map(([code, name]) => ({ code, name }))]
+  .sort((a, b) => a.code.localeCompare(b.code));
+export const className = code => ALL_CLASSES.find(c => c.code === code)?.name ?? code;
+
 const clean = ndc => String(ndc ?? '').normalize('NFKC').trim();
 
 // '338.15' → { code: '338', name: '金融・投資' }; '' or anything unreadable → null.

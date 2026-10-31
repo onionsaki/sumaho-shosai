@@ -8,7 +8,7 @@ import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
 import { isStale } from '../core/stale.js';
 import { applyOrder, moveItem } from '../core/order.js';
-import { needsClass } from '../core/ndc.js';
+import { needsClass, ALL_CLASSES } from '../core/ndc.js';
 import { isMagazineCode } from '../core/isbn.js';
 
 const readFile = file => new Promise((resolve, reject) => {
@@ -106,13 +106,25 @@ export function mount(container, ctx) {
 
     // --- stale rules: one tag, its own number of years ---
     const saveRules = async rules => { await db.setSetting('staleRules', rules); render(); };
-    const ruleRows = staleRules.map((r, i) => h('div', { class: 'rule-row' },
+    const yearsPick = (r, i) => h('select', { 'aria-label': '年数', onChange: e => saveRules(staleRules.map((x, j) => (j === i ? { ...x, years: Number(e.target.value) } : x))) },
+      Array.from({ length: 10 }, (_, k) => k + 1).map(n => h('option', { value: n, selected: n === r.years }, `${n}年`)));
+    const dropRule = i => h('button', { class: 'icon-btn', 'aria-label': 'この組を外す', onClick: () => saveRules(staleRules.filter((_, j) => j !== i)) }, '×');
+    const classRows = staleRules.map((r, i) => (r.classCode ? h('div', { class: 'rule-row' },
+      h('select', { 'aria-label': '対象の分類', onChange: e => saveRules(staleRules.map((x, j) => (j === i ? { ...x, classCode: e.target.value } : x))) },
+        ALL_CLASSES.filter(c => c.code === r.classCode || !staleRules.some(x => x.classCode === c.code))
+          .map(c => h('option', { value: c.code, selected: c.code === r.classCode }, `${c.code} ${c.name}`))),
+      yearsPick(r, i), dropRule(i)) : null)).filter(Boolean);
+    const freeClass = ALL_CLASSES.find(c => !staleRules.some(r => r.classCode === c.code));
+    const addClassRule = freeClass
+      ? h('button', { class: 'btn wide', style: { marginTop: '10px' }, onClick: () => saveRules([...staleRules, { classCode: freeClass.code, years: 3 }]) }, '分類を足す')
+      : null;
+    const ruleRows = staleRules.map((r, i) => (r.classCode ? null : h('div', { class: 'rule-row' },
       h('select', { 'aria-label': '対象のタグ', onChange: e => saveRules(staleRules.map((x, j) => (j === i ? { ...x, tagId: e.target.value } : x))) },
         tags.filter(t => t.id === r.tagId || !staleRules.some(x => x.tagId === t.id))
           .map(t => h('option', { value: t.id, selected: t.id === r.tagId }, t.name))),
       h('select', { 'aria-label': '年数', onChange: e => saveRules(staleRules.map((x, j) => (j === i ? { ...x, years: Number(e.target.value) } : x))) },
         Array.from({ length: 10 }, (_, k) => k + 1).map(n => h('option', { value: n, selected: n === r.years }, `${n}年`))),
-      h('button', { class: 'icon-btn', 'aria-label': 'この組を外す', onClick: () => saveRules(staleRules.filter((_, j) => j !== i)) }, '×')));
+      h('button', { class: 'icon-btn', 'aria-label': 'この組を外す', onClick: () => saveRules(staleRules.filter((_, j) => j !== i)) }, '×')))).filter(Boolean);
     const freeTags = tags.filter(t => !staleRules.some(r => r.tagId === t.id));
     const addRule = freeTags.length
       ? h('button', { class: 'btn wide', style: { marginTop: '10px' }, onClick: () => saveRules([...staleRules, { tagId: freeTags[0].id, years: 3 }]) }, 'タグを足す')
@@ -267,7 +279,10 @@ export function mount(container, ctx) {
       stale: ['古いかもの判定', () => titled('古いかもの判定', h('div', { class: 'card' },
         h('p', { class: 'muted small', style: { marginTop: 0 } }, 'このタグの本は、発行からこの年数がたったら「古いかも」と出します'),
         ruleRows.length ? ruleRows : h('p', { class: 'small' }, '（使っていません）'),
-        addRule))],
+        addRule,
+        h('p', { class: 'muted small', style: { marginTop: '18px' } }, 'この分類の本も、タグがなくても同じように判定します（国立国会図書館の分類が付いた本だけ）'),
+        classRows.length ? classRows : h('p', { class: 'small' }, '（使っていません）'),
+        addClassRule))],
       tags: ['タグの整理', () => [h('details', { class: 'card', style: { marginTop: '22px' }, open: openTagsOnRender, onToggle: e => { openTagsOnRender = e.target.open; } },
         h('summary', { style: { cursor: 'pointer', fontWeight: '700', minHeight: '40px' } }, `タグの整理（${tags.length}個）`),
         tagAdd,
