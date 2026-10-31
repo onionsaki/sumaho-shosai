@@ -434,3 +434,14 @@ p, .kv, .small, .stat span { overflow-wrap: anywhere; }
 .cover-name { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; }
 .cover.big .cover-name { -webkit-line-clamp: 6; }
 .status-btn { gap: 0 4px; padding: 4px; white-space: normal; flex-wrap: wrap; line-height: 1.2; } /* a 3-digit count drops under the label */
+
+/* The page must never be wider than the phone (鬼さん 2026-10-31, screenshots: on the first screen the book rows
+   ran past the right edge, so Chrome treated the page as wider than the screen and the bottom tab bar, pinned to
+   that wider page, slid off-screen / moved with scrolling). Rows are held to the screen width, long title
+   phrases may break anywhere, and any leftover overflow is clipped instead of widening the page. */
+html, body { overflow-x: clip; max-width: 100%; }
+.view { overflow-x: clip; }
+.book-list { grid-template-columns: minmax(0, 1fr); }
+.book-list > li, .book-row, .meta { min-width: 0; max-width: 100%; }
+.meta .title, .meta .sub, .cover-name { overflow-wrap: anywhere; }
+.tabbar { width: 100%; max-width: 100vw; }
