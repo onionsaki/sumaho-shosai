@@ -58,6 +58,11 @@ export function createLookupQueue({
     lastNdlAt = now();
   }
 
+  // NDL's CDN sometimes serves a cached copy without the CORS header (found 2026-10-31), which the browser
+  // rejects as a network error. A retry asks for the same search under a different address (idx=1 is the
+  // default start position, so the answer is the same) to get a fresh copy that carries the header.
+  const freshUrl = (url, attempt) => (attempt === 0 || /[?&]idx=/.test(url) ? url : `${url}&idx=1`);
+
   // Returns the response text, null for a non-retryable HTTP error, or throws.
   async function ndlFetch(url) {
     for (let attempt = 0; ; attempt++) {
@@ -65,7 +70,7 @@ export function createLookupQueue({
       const outcome = await inLane(async () => {
         await throttle();
         try {
-          const res = await fetchText(url);
+          const res = await fetchText(freshUrl(url, attempt));
           if (res.status === 200) return { text: res.text };
           if (res.status !== 429 && res.status < 500) return { text: null };
         } catch (err) {
@@ -264,6 +269,24 @@ export function createLookupQueue({
       const saved = await db.putBook({ ...latest, coverUrl: url });
       for (const cb of listeners) cb(saved);
       return true;
+    },
+    // Asks the library again for a saved book's 分類 only (books registered before 2026-10-31 lack it).
+    // Returns true when one was found.
+    async fillClass(id) {
+      const book = await db.getBook(id);
+      if (!book?.isbn || book.ndc || !isOnline()) return false;
+      let ndc = '';
+      try {
+        const text = await ndlFetch(ndlIsbnUrl(book.isbn));
+        ndc = (text ? pickBestNdlItem(parseNdlOpenSearch(text, DOMParserImpl))?.ndc : '') || '';
+      } catch {
+        return false; // offline or no answer: asked again next time
+      }
+      const latest = await db.getBook(id);
+      if (!latest) return false;
+      const saved = await db.putBook({ ...latest, ndc: latest.ndc || ndc, ndcChecked: true });
+      for (const cb of listeners) cb(saved);
+      return Boolean(ndc);
     },
     async fetchMagazine(code) {
       const info = await magazineInfo(code);

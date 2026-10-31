@@ -10,6 +10,7 @@ import { normalizeForSearch } from '../core/normalize.js';
 import { icon } from './icons.js';
 import { pickPhoto } from './photo.js';
 import { withSections } from '../core/memo.js';
+import { classify } from '../core/ndc.js';
 
 const OWNERSHIP_OPTIONS = Object.entries(LABELS.ownership);
 const READ_OPTIONS = Object.entries(LABELS.read);
@@ -45,6 +46,7 @@ export async function openDetail(bookId, ctx) {
       [book.publisher, book.issued && book.issued.replace('-', '年') + (book.issued.includes('-') ? '月' : '年')].filter(Boolean).join('・'),
       [book.pages ? `${book.pages}ページ` : '', book.price ? `${book.price.toLocaleString()}円` : ''].filter(Boolean).join('・'),
       book.isbn ? `ISBN ${book.isbn}` : 'ISBNなし',
+      classify(book.ndc) ? `分類 ${classify(book.ndc).name}（${book.ndc}）` : '',
     ].filter(Boolean);
     const status = book.lookup === 'pending' ? '本の情報を取得中です'
       : book.lookup === 'not_found' && isMagazineCode(book.isbn) ? '楽天に載っていない号でした。「情報を直す」で雑誌名を入れると、同じ雑誌の別の号もその名前で登録されます'

@@ -2,6 +2,7 @@
 
 import { normalizeForSearch } from './normalize.js';
 import { isStale } from './stale.js';
+import { classify } from './ndc.js';
 
 // Thousands of books (鬼さん 2026-10-25): normalised text is worked out once per book object and reused,
 // so typing and re-sorting do not redo NFKC/kana work. A saved book is a new object, so edits are never stale.
@@ -23,13 +24,14 @@ const collator = new Intl.Collator('ja');
 
 export function filterBooks(books, filter = {}, ctx = {}) {
   const {
-    query = '', ownership = [], readStatus = [], tagIds = [], staleOnly = false, needsReviewOnly = false,
+    query = '', ownership = [], readStatus = [], tagIds = [], classCodes = [], staleOnly = false, needsReviewOnly = false,
   } = filter;
   const terms = String(query).split(/[\s　]+/).map(normalizeForSearch).filter(Boolean);
   return books.filter(b => {
     if (ownership.length && !ownership.includes(b.ownership)) return false;
     if (readStatus.length && !readStatus.includes(b.readStatus)) return false;
     if (tagIds.length && !tagIds.every(t => b.tagIds.includes(t))) return false;
+    if (classCodes.length && !classCodes.includes(classify(b.ndc)?.code)) return false; // any of the chosen 分類
     if (needsReviewOnly && b.lookup !== 'not_found') return false;
     if (staleOnly && !isStale(b, ctx.staleRules, ctx.today)) return false;
     if (terms.length) {

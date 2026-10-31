@@ -6,6 +6,7 @@ import { icon } from './icons.js';
 import { filterBooks, sortBooks, SORTS } from '../core/search.js';
 import { isStale } from '../core/stale.js';
 import { groupWorks } from '../core/series.js';
+import { classCounts } from '../core/ndc.js';
 import { booksToCsv, csvFileName } from '../core/csv.js';
 import { shouldRemindBackup } from '../core/backup.js';
 import { normalizeForSearch } from '../core/normalize.js';
@@ -16,7 +17,7 @@ const PAGE = 200;
 // Kept across tab switches during one visit. Opens on 持っている only (鬼さん 2026-10-25), so volumes added by
 // 「既刊を探す」 as 持っていない stay out of the way until that button is pressed.
 const state = {
-  query: '', ownership: ['owned'], readStatus: [], tagIds: [], staleOnly: false, needsReviewOnly: false,
+  query: '', ownership: ['owned'], readStatus: [], tagIds: [], classCodes: [], staleOnly: false, needsReviewOnly: false,
   view: 'books', order: 'kana',
 };
 
@@ -89,6 +90,8 @@ export function mount(container, ctx) {
       ...state.readStatus.map(v => chip(LABELS.read[v], () => { state.readStatus = state.readStatus.filter(x => x !== v); })),
       ...state.tagIds.map(id => tags.find(t => t.id === id)).filter(Boolean)
         .map(t => chip(t.name, () => { state.tagIds = state.tagIds.filter(x => x !== t.id); })),
+      ...state.classCodes.map(code => chip(classCounts(books).find(c => c.code === code)?.name ?? code,
+        () => { state.classCodes = state.classCodes.filter(x => x !== code); })),
       state.staleOnly ? chip('古いかも', () => { state.staleOnly = false; }) : null,
       state.needsReviewOnly ? chip('あとで確認', () => { state.needsReviewOnly = false; }) : null,
     ].filter(Boolean);
@@ -102,6 +105,7 @@ export function mount(container, ctx) {
     const draw = () => {
       const chip = (label, on, onClick) => h('button', { class: on ? 'chip on' : 'chip', onClick: () => { onClick(); render(); draw(); } }, label);
       const reviewCount = books.filter(b => b.lookup === 'not_found').length;
+      const classes = classCounts(books.filter(b => !state.ownership.length || state.ownership.includes(b.ownership)));
       const tagNames = state.tagIds.map(id => tags.find(t => t.id === id)?.name).filter(Boolean);
       fill(body,
         h('div', { class: 'section-title', style: { marginTop: '4px' } }, '読んだか'),
@@ -114,6 +118,10 @@ export function mount(container, ctx) {
             title: 'タグで絞り込む', tags, selected: state.tagIds,
             onToggle: id => { state.tagIds = toggle(state.tagIds, id); render(); draw(); },
           }) }, tagNames.length ? '変更' : `タグを選ぶ（全${tags.length}個）`)),
+        h('div', { class: 'section-title' }, '分類（国立国会図書館）'),
+        classes.length ? h('div', { class: 'chips' }, classes.map(c =>
+          chip(`${c.name} ${c.count}`, state.classCodes.includes(c.code), () => { state.classCodes = toggle(state.classCodes, c.code); })))
+          : h('p', { class: 'muted small' }, 'まだ分類の付いた本がありません。設定の「分類を付ける」で付けられます'),
         h('div', { class: 'section-title' }, 'その他'),
         h('div', { class: 'chips' },
           chip('古いかも', state.staleOnly, () => { state.staleOnly = !state.staleOnly; }),
@@ -122,7 +130,7 @@ export function mount(container, ctx) {
         segmented([['books', '1冊ずつ'], ['works', '作品でまとめる']], state.view, v => { state.view = v; render(); }),
         h('div', { class: 'row-buttons', style: { marginTop: '22px' } },
           h('button', { class: 'btn', onClick: () => {
-            Object.assign(state, { ownership: [], readStatus: [], tagIds: [], staleOnly: false, needsReviewOnly: false });
+            Object.assign(state, { ownership: [], readStatus: [], tagIds: [], classCodes: [], staleOnly: false, needsReviewOnly: false });
             render(); draw();
           } }, '条件を外す'),
           h('button', { class: 'btn', onClick: () => downloadText(csvFileName(todayStr()), booksToCsv(currentBooks, tags), 'text/csv') }, 'この一覧をCSVに')),

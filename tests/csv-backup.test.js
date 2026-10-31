@@ -7,8 +7,8 @@ import { workKeyOf } from '../src/core/volume.js';
 
 test('csv starts with BOM and exact header', () => {
   const csv = booksToCsv([], []);
-  assert.ok(csv.startsWith('﻿ISBN,書名,書名の読み,著者,出版社,発行年月,ページ数,定価,作品名,巻,種類,持っているか,読んだか,タグ,メモ,登録日,読んだ日,手放した日,更新日\r\n'));
-  assert.equal(CSV_HEADER.length, 19);
+  assert.ok(csv.startsWith('﻿ISBN,書名,書名の読み,著者,出版社,発行年月,ページ数,定価,作品名,巻,種類,持っているか,読んだか,タグ,メモ,登録日,読んだ日,手放した日,更新日,分類\r\n'));
+  assert.equal(CSV_HEADER.length, 20);
 });
 
 test('csv writes labels, joins and dates', () => {
@@ -17,10 +17,10 @@ test('csv writes labels, joins and dates', () => {
     isbn: '9784088725093', title: 'ONE PIECE', titleKana: 'ワンピース', authors: ['尾田栄一郎', '別の人'],
     publisher: '集英社', issued: '1997-12', pages: 207, price: 410, workTitle: 'ONE PIECE', volume: 1,
     ownership: 'owned', readStatus: 'read', tagIds: ['t1', 't2'], createdAt: '2026-10-24T03:00:00.000Z',
-    updatedAt: '2026-10-25T03:00:00.000Z', readAt: '2026-10-24',
+    updatedAt: '2026-10-25T03:00:00.000Z', readAt: '2026-10-24', ndc: '726.1',
   });
   const line = booksToCsv([b], tags).split('\r\n')[1];
-  assert.equal(line, '9784088725093,ONE PIECE,ワンピース,尾田栄一郎、別の人,集英社,1997-12,207,410,ONE PIECE,1,紙,持っている,読了,マンガ、試験用,,2026-10-24,2026-10-24,,2026-10-25');
+  assert.equal(line, '9784088725093,ONE PIECE,ワンピース,尾田栄一郎、別の人,集英社,1997-12,207,410,ONE PIECE,1,紙,持っている,読了,マンガ、試験用,,2026-10-24,2026-10-24,,2026-10-25,726.1 漫画');
 });
 
 test('csv round-trip keeps tricky memo', () => {
@@ -43,6 +43,15 @@ test('csv round-trip keeps tricky memo', () => {
   assert.equal(book.isbn, '9784763135476');
   assert.equal(book.lookup, 'ok');
   assert.equal(book.workKey, workKeyOf('作品', ['A', 'B']));
+});
+
+test('分類 goes out as number and name, comes back as the number; old 19-column files still load', () => {
+  const b = newBook({ isbn: '9784763135476', title: '本', ndc: '338.15' });
+  const rows = parseCsv(booksToCsv([b], []));
+  assert.equal(rows[1][19], '338.15 金融・投資');
+  assert.equal(rowsToBooks(rows)[0].book.ndc, '338.15');
+  const old = [CSV_HEADER.slice(0, 19), rows[1].slice(0, 19)];
+  assert.equal(rowsToBooks(old)[0].book.ndc, '');
 });
 
 test('parseCsv handles LF, CRLF, empty fields and trailing newline', () => {

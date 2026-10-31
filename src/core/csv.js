@@ -3,11 +3,14 @@
 import { LABELS, newBook, todayStr } from './model.js';
 import { toIsbn13 } from './isbn.js';
 import { workKeyOf } from './volume.js';
+import { classify } from './ndc.js';
 
 export const CSV_HEADER = [
   'ISBN', '書名', '書名の読み', '著者', '出版社', '発行年月', 'ページ数', '定価', '作品名', '巻', '種類',
-  '持っているか', '読んだか', 'タグ', 'メモ', '登録日', '読んだ日', '手放した日', '更新日',
+  '持っているか', '読んだか', 'タグ', 'メモ', '登録日', '読んだ日', '手放した日', '更新日', '分類',
 ];
+// Files written before 分類 was added (2026-10-31) have the first 19 columns only.
+const OLD_HEADER = CSV_HEADER.slice(0, 19);
 
 const JOIN = '、';
 const escape = v => {
@@ -23,6 +26,7 @@ export function booksToCsv(books, tags) {
     b.pages, b.price, b.workTitle, b.volume, LABELS.format[b.format], LABELS.ownership[b.ownership],
     LABELS.read[b.readStatus], b.tagIds.map(id => tagName.get(id)).filter(Boolean).join(JOIN), b.memo,
     localDate(b.createdAt), b.readAt, b.releasedAt, localDate(b.updatedAt),
+    b.ndc ? `${b.ndc} ${classify(b.ndc)?.name ?? ''}`.trim() : '',
   ]);
   return '﻿' + [CSV_HEADER, ...rows].map(r => r.map(escape).join(',')).join('\r\n') + '\r\n';
 }
@@ -64,7 +68,8 @@ const dateToIso = d => {
 };
 
 export function rowsToBooks(rows) {
-  if (!rows.length || rows[0].join(',') !== CSV_HEADER.join(',')) {
+  const head = rows[0]?.join(',');
+  if (head !== CSV_HEADER.join(',') && head !== OLD_HEADER.join(',')) {
     throw new Error('CSVの見出しがスマホ書斎の形と違います');
   }
   return rows.slice(1).filter(r => r.some(c => c !== '')).map(r => {
@@ -95,6 +100,7 @@ export function rowsToBooks(rows) {
       releasedAt: cell(17),
       updatedAt: dateToIso(cell(18)) ?? now,
       lookup: isbn ? (title ? 'ok' : 'pending') : 'manual',
+      ndc: (cell(19).match(/^[\d.]+/) ?? [''])[0],
     });
     return { book, tagNames: split(cell(13)) };
   });

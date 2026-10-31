@@ -317,3 +317,22 @@ test('an unknown magazine issue with no earlier issue gets a placeholder name an
   assert.match(saved.title, /^雑誌24034 20\d\d年1月号$/);
   assert.equal(saved.lookup, 'not_found');
 });
+
+test('a CORS-less cached answer (network error) is retried under a fresh address; fillClass saves the 分類', async () => {
+  const db = await fresh();
+  const book = await db.putBook(newBook({ isbn: '9784763135476', title: '読書術', lookup: 'ok' }));
+  const calls = [];
+  const fetchImpl = async url => {
+    calls.push(url);
+    if (url.includes('ndlsearch') && !url.includes('idx=1')) throw new TypeError('Failed to fetch');
+    return { status: 200, text: async () => fixture('ndl-9784763135476.xml') };
+  };
+  const q = make(db, fetchImpl, fakeClock());
+  assert.equal(await q.fillClass(book.id), true);
+  assert.equal(calls.length, 2);
+  assert.ok(calls[1].endsWith('&idx=1'));
+  const saved = await db.getBook(book.id);
+  assert.equal(saved.ndc, '019.13');
+  assert.equal(saved.ndcChecked, true);
+  assert.equal(saved.title, '読書術'); // nothing else is touched
+});

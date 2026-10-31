@@ -37,6 +37,7 @@ export function newBook(partial = {}) {
     workTitle: '', workKey: '',
     volume: null, volumeLabel: '',
     coverUrl: '',
+    ndc: '', // 分類 number from the library (core/ndc.js names it)
     hasPhoto: false, // a picture taken on the phone lives in the photos store (db.getPhoto)
     format: 'paper',
     ownership: 'owned',

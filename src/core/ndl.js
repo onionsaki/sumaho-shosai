@@ -53,6 +53,19 @@ const parsePrice = raw => {
   return m ? Number(m[1].replace(/,/g, '')) : null;
 };
 
+// The newest edition of the classification the record has (NDC10, then 9, then 8).
+function pickNdc(item) {
+  const typed = all(item, 'dc', 'subject').map(e => ({
+    type: e.getAttributeNS(NS.xsi, 'type') || e.getAttribute('xsi:type') || '',
+    value: nfkc(e.textContent).trim(),
+  }));
+  for (const edition of ['NDC10', 'NDC9', 'NDC8', 'NDC']) {
+    const hit = typed.find(t => t.type.endsWith(`:${edition}`) && /^\d/.test(t.value));
+    if (hit) return hit.value;
+  }
+  return '';
+}
+
 function parseItem(item) {
   const title = first(item, 'dc', 'title');
   const volumeLabel = first(item, 'dcndl', 'volume');
@@ -75,6 +88,7 @@ function parseItem(item) {
     volumeLabel,
     workTitle,
     coverUrl: '',
+    ndc: pickNdc(item),
   };
 }
 
@@ -90,5 +104,7 @@ export function pickBestNdlItem(items) {
     const score = (item.titleKana ? 2 : 0) + (item.title === item.title.normalize('NFKC') ? 1 : 0);
     if (score > bestScore) { best = item; bestScore = score; }
   }
+  // The best-looking record can lack the classification while another record of the same book has it.
+  if (best && !best.ndc) best = { ...best, ndc: items.find(i => i.ndc)?.ndc ?? '' };
   return best;
 }

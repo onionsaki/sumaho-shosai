@@ -8,6 +8,8 @@ import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
 import { isStale } from '../core/stale.js';
 import { applyOrder, moveItem } from '../core/order.js';
+import { needsClass } from '../core/ndc.js';
+import { isMagazineCode } from '../core/isbn.js';
 
 const readFile = file => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -205,6 +207,23 @@ export function mount(container, ctx) {
       render();
     } }, `表紙のない本に表紙を付ける（${noCover.length}冊・約${Math.max(1, Math.ceil(noCover.length / 60))}分）`);
 
+    // --- 分類 for books registered before it was saved (2026-10-31) ---
+    const noClass = books.filter(b => needsClass(b, isMagazineCode));
+    let classing = false;
+    const classBtn = h('button', { class: 'btn wide', style: { marginTop: '10px' }, disabled: !noClass.length, onClick: async () => {
+      if (classing) return;
+      classing = true;
+      let found = 0;
+      for (const [i, b] of noClass.entries()) {
+        if (disposed) break;
+        classBtn.textContent = `分類を調べています… ${i + 1} / ${noClass.length}`;
+        if (await lookup.fillClass(b.id)) found++;
+      }
+      classing = false;
+      toast(`分類を ${found}冊 に付けました${noClass.length - found ? `（${noClass.length - found}冊は国立国会図書館に分類がありませんでした）` : ''}`);
+      render();
+    } }, noClass.length ? `分類を付ける（${noClass.length}冊・約${Math.max(1, Math.ceil(noClass.length / 12))}分。画面はこのままで）` : '分類はすべて調べ済みです');
+
     // Sections in the order 鬼さん chose (設定の並び順); the name card and the credits stay put.
     const titled = (title, ...body) => [h('div', { class: 'section-title' }, title), ...body];
     const sections = {
@@ -212,7 +231,9 @@ export function mount(container, ctx) {
       sugata: ['蔵書のすがた', () => titled('蔵書のすがた', sugata)],
       data: ['データ', () => titled('データ', h('div', { class: 'card' },
         h('div', { class: 'stat' }, h('span', {}, '登録の合計'), h('span', {}, `${books.length.toLocaleString()}冊`)),
-        h('div', { class: 'stat' }, h('span', {}, 'データの保護'), h('span', {}, persisted === null ? '不明' : persisted ? '有効' : '無効'))))],
+        h('div', { class: 'stat' }, h('span', {}, 'データの保護'), h('span', {}, persisted === null ? '不明' : persisted ? '有効' : '無効')),
+        h('p', { class: 'muted small', style: { marginBottom: 0 } }, '分類は国立国会図書館の番号から付きます。新しく登録した本には自動で付きます。雑誌にはありません。'),
+        classBtn))],
       backup: ['バックアップ', () => titled('バックアップ', h('div', { class: 'card' },
         h('p', { class: 'small', style: { marginTop: 0 } }, `前回：${lastBackupAt ? formatDate(todayStr(new Date(lastBackupAt))) : 'まだありません'}`),
         h('p', { class: 'muted small' }, 'データはこのスマホの中だけにあります。ときどきバックアップを作って、Googleドライブなどに保存してください。'),
