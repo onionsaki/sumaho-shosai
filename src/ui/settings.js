@@ -2,7 +2,7 @@
 
 import { h, fill, toast, confirmDialog, saveFile, savedMessage, formatDate, sheet, segmented } from './dom.js';
 import { booksToCsv, csvFileName, parseCsv, rowsToBooks } from '../core/csv.js';
-import { makeBackup, validateBackup, backupFileName } from '../core/backup.js';
+import { makeBackup, validateBackup, backupFileName, restoredSettings } from '../core/backup.js';
 import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami, SHELF_ROOM } from '../core/stats.js';
 import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
@@ -184,7 +184,7 @@ export function mount(container, ctx) {
       if (!check.ok) { toast(check.reason); return; }
       if (!(await confirmDialog(`今のデータを全部、このバックアップ（${data.books.length}冊、${formatDate(todayStr(new Date(data.exportedAt)))}作成）の中身に置き換えます。よろしいですか？`, '置き換える'))) return;
       try {
-        await db.replaceAll({ books: data.books, tags: data.tags, settings: data.settings, photos: data.photos ?? [], wishes: data.wishes ?? [] });
+        await db.replaceAll({ books: data.books, tags: data.tags, settings: restoredSettings(data.settings, await db.allSettings()), photos: data.photos ?? [], wishes: data.wishes ?? [] });
       } catch {
         toast('戻せませんでした。今のデータはそのままです');
         return;
@@ -274,7 +274,7 @@ export function mount(container, ctx) {
         h('p', { class: 'muted small' }, '取り込みはスマホ書斎で書き出したCSVの形に限ります。今の本棚に追加され、同じISBNの本は飛ばします。'),
         csvInput))],
       rakuten: ['本の表紙（楽天ブックス）', () => titled('本の表紙（楽天ブックス）', h('div', { class: 'card' },
-        h('p', { class: 'muted small', style: { marginTop: 0 } }, '楽天ウェブサービスで作ったアプリIDとアクセスキーを入れると、表紙が出ない本を楽天から探します。キーはこのスマホの中だけに保存します。'),
+        h('p', { class: 'muted small', style: { marginTop: 0 } }, '楽天ウェブサービスで作ったアプリIDとアクセスキーを入れると、表紙が出ない本を楽天から探します。キーはこのスマホの中だけに保存し、バックアップにも入れません（スマホを替えたら入れ直してください）。'),
         h('label', { class: 'field' }, h('span', {}, 'アプリID'), appIdInput),
         h('label', { class: 'field' }, h('span', {}, 'アクセスキー'), keyInput),
         h('button', { class: 'btn primary wide', onClick: async () => {

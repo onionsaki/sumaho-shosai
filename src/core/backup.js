@@ -4,8 +4,19 @@ const APP = 'sumaho-shosai';
 const VERSION = 1;
 const DAY = 86400000;
 
+// The Rakuten keys stay on the phone (鬼さん 2026-10-31): they never go into a backup file on Google Drive.
+export const PHONE_ONLY_SETTINGS = ['rakutenAppId', 'rakutenAccessKey'];
+const isPhoneOnly = row => PHONE_ONLY_SETTINGS.includes(row?.key);
+
 export function makeBackup({ books, tags, settings, photos = [], wishes = [] }, nowIso) {
-  return { app: APP, version: VERSION, exportedAt: nowIso, books, tags, settings, photos, wishes };
+  return { app: APP, version: VERSION, exportedAt: nowIso, books, tags, settings: settings.filter(r => !isPhoneOnly(r)), photos, wishes };
+}
+
+// Settings to write back on restore: the backup's own, but the keys already on this phone are kept
+// (and keys inside an older backup are only used when this phone has none).
+export function restoredSettings(backupSettings, phoneSettings) {
+  const kept = phoneSettings.filter(r => isPhoneOnly(r) && r.value);
+  return [...backupSettings.filter(r => !isPhoneOnly(r) || !kept.some(k => k.key === r.key)), ...kept];
 }
 
 export function validateBackup(obj) {

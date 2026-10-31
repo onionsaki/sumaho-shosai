@@ -44,3 +44,16 @@ test('old phone → backup file → new phone: books, memos, tags, photos, wishe
   assert.equal((await newPhone.getBook(book.id)).memo, book.memo);
   assert.equal((await newPhone.getPhoto(book.id)).length, 200023);
 });
+
+test('the Rakuten keys never go into the backup, and a restore keeps the keys already on the phone', async () => {
+  const { restoredSettings } = await import('../src/core/backup.js');
+  const settings = [{ key: 'theme', value: 'blue' }, { key: 'rakutenAppId', value: 'APP' }, { key: 'rakutenAccessKey', value: 'KEY' }];
+  const file = JSON.stringify(makeBackup({ books: [], tags: [], settings }, '2026-10-31T00:00:00.000Z'));
+  assert.ok(!file.includes('APP') && !file.includes('KEY'));
+  assert.deepEqual(JSON.parse(file).settings, [{ key: 'theme', value: 'blue' }]);
+  const phone = [{ key: 'theme', value: 'green' }, { key: 'rakutenAppId', value: 'NEWAPP' }, { key: 'rakutenAccessKey', value: 'NEWKEY' }];
+  assert.deepEqual(restoredSettings(JSON.parse(file).settings, phone),
+    [{ key: 'theme', value: 'blue' }, { key: 'rakutenAppId', value: 'NEWAPP' }, { key: 'rakutenAccessKey', value: 'NEWKEY' }]);
+  // an older backup that still has keys: used only when this phone has none
+  assert.deepEqual(restoredSettings(settings, [{ key: 'theme', value: 'green' }]), settings);
+});
