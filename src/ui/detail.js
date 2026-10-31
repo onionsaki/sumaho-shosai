@@ -9,6 +9,7 @@ import { pickSeriesVolumes } from '../core/series.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { icon } from './icons.js';
 import { pickPhoto } from './photo.js';
+import { withSections } from '../core/memo.js';
 
 const OWNERSHIP_OPTIONS = Object.entries(LABELS.ownership);
 const READ_OPTIONS = Object.entries(LABELS.read);
@@ -119,6 +120,28 @@ export async function openDetail(bookId, ctx) {
   const saveMemo = () => { clearTimeout(memoTimer); if (memo.value !== book.memo) save({ memo: memo.value }); };
   memo.addEventListener('input', () => { clearTimeout(memoTimer); memoTimer = setTimeout(saveMemo, 500); });
   memo.addEventListener('blur', saveMemo);
+  // A memo written with the headings is long: show it whole instead of a small scrolling box.
+  const fitMemo = () => {
+    if (!memo.value.includes('■') || !memo.isConnected) return;
+    memo.style.height = 'auto';
+    memo.style.height = `${memo.scrollHeight + 4}px`;
+  };
+  memo.addEventListener('input', fitMemo);
+  // 問いで書く: the expectation written in 欲しい本 comes along under 期待との差.
+  async function addSections() {
+    const wish = (await db.allWishes()).find(w => w.bookId === book.id || (book.isbn && w.isbn === book.isbn));
+    const next = withSections(memo.value, wish?.expect ?? '');
+    if (next === memo.value.replace(/\s+$/, '')) { toast('見出しはもう入っています'); return; }
+    memo.value = `${next}\n`;
+    saveMemo();
+    // Cursor goes under the first heading that has nothing written yet.
+    const empty = memo.value.search(/■[^\n]*\n(?=\n|■|$)/);
+    const at = empty < 0 ? memo.value.length : memo.value.indexOf('\n', empty) + 1;
+    fitMemo();
+    memo.focus({ preventScroll: true });
+    memo.setSelectionRange(at, at);
+    memo.scrollTop = 0;
+  }
   s.onClose(saveMemo);
 
   // Yomoo-style line: reading state on the left, the day it was registered on the right (鬼さん 2026-10-24: 読んだ日→登録した日).
@@ -290,6 +313,7 @@ export async function openDetail(bookId, ctx) {
       h('div', { class: 'tag-line' }, icon('tag'), tagRow),
       h('div', { style: { height: '18px' } }),
       memo,
+      h('button', { class: 'link-btn', onClick: addSections }, '問いで書く（学び・体験・疑問など7つの見出しを入れる）'),
       stateLine,
       h('div', { class: 'section-title' }, '持っているか'),
       segmented(OWNERSHIP_OPTIONS, book.ownership, async v => {
@@ -316,6 +340,7 @@ export async function openDetail(bookId, ctx) {
         s.close();
       } }, '削除'),
     );
+    fitMemo();
   }
   render();
 }
