@@ -104,6 +104,30 @@ export function downloadText(fileName, text, mime) {
   setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+// Saving a file (鬼さん 2026-10-31: a download stays in the phone's ダウンロード folder and never reaches
+// Google Drive). Where the phone can share files, its share sheet opens so ドライブ can be picked; otherwise
+// the file is downloaded as before. Chrome only shares some kinds of file, so JSON goes out as .txt.
+// Returns 'shared', 'downloaded' or 'cancelled'.
+export async function saveFile(fileName, text, mime) {
+  const isJson = /\.json$/.test(fileName);
+  const shareName = isJson ? fileName.replace(/\.json$/, '.txt') : fileName;
+  const file = typeof File === 'function' ? new File([text], shareName, { type: isJson ? 'text/plain' : mime }) : null;
+  if (file && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: shareName });
+      return 'shared';
+    } catch (err) {
+      if (err?.name === 'AbortError') return 'cancelled';
+      // anything else (not allowed here, too big…): fall back to a download
+    }
+  }
+  downloadText(fileName, text, mime);
+  return 'downloaded';
+}
+
+export const savedMessage = how => (how === 'shared' ? '送り先に渡しました'
+  : how === 'downloaded' ? 'スマホの「ダウンロード」フォルダに保存しました' : '');
+
 export function segmented(options, value, onChange) {
   const wrap = h('div', { class: 'segmented', role: 'radiogroup' });
   const render = current => {

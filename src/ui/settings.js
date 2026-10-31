@@ -1,6 +1,6 @@
 // 設定 tab: tags, stale rule, CSV, backup, stats (spec §4-6, §6).
 
-import { h, fill, toast, confirmDialog, downloadText, formatDate, sheet, segmented } from './dom.js';
+import { h, fill, toast, confirmDialog, saveFile, savedMessage, formatDate, sheet, segmented } from './dom.js';
 import { booksToCsv, csvFileName, parseCsv, rowsToBooks } from '../core/csv.js';
 import { makeBackup, validateBackup, backupFileName } from '../core/backup.js';
 import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami, SHELF_ROOM } from '../core/stats.js';
@@ -177,7 +177,7 @@ export function mount(container, ctx) {
       }
     });
 
-    const backupInput = filePicker('.json,application/json', async file => {
+    const backupInput = filePicker('.json,.txt,application/json,text/plain', async file => {
       let data;
       try { data = JSON.parse(await readFile(file)); } catch { toast('バックアップのファイルではありません'); return; }
       const check = validateBackup(data);
@@ -248,21 +248,24 @@ export function mount(container, ctx) {
         classBtn))],
       backup: ['バックアップ', () => titled('バックアップ', h('div', { class: 'card' },
         h('p', { class: 'small', style: { marginTop: 0 } }, `前回：${lastBackupAt ? formatDate(todayStr(new Date(lastBackupAt))) : 'まだありません'}`),
-        h('p', { class: 'muted small' }, 'データはこのスマホの中だけにあります。ときどきバックアップを作って、Googleドライブなどに保存してください。'),
+        h('p', { class: 'muted small' }, 'データはこのスマホの中だけにあります。ときどきバックアップを作って、Googleドライブに保存してください。'),
+        h('p', { class: 'muted small' }, '押すと送り先を選ぶ画面が出ます。「ドライブ」を選び、フォルダ（例：スマホ書斎）を選んで保存します。'),
         h('div', { class: 'row-buttons' },
           h('button', { class: 'btn primary', onClick: async () => {
             const backup = makeBackup({ books: await db.allBooks(), tags: await db.allTags(), settings: await db.allSettings(), photos: await db.allPhotos(), wishes: await db.allWishes() }, new Date().toISOString());
-            downloadText(backupFileName(todayStr()), JSON.stringify(backup), 'application/json');
+            const how = await saveFile(backupFileName(todayStr()), JSON.stringify(backup), 'application/json');
+            if (how === 'cancelled') return;
             await db.setSetting('lastBackupAt', backup.exportedAt);
-            toast('バックアップを作りました');
+            toast(`バックアップを作りました。${savedMessage(how)}`);
             render();
           } }, 'バックアップを作る'),
           h('button', { class: 'btn', onClick: () => backupInput.click() }, 'バックアップから戻す')),
         backupInput))],
       csv: ['CSV', () => titled('CSV', h('div', { class: 'card' },
         h('div', { class: 'row-buttons' },
-          h('button', { class: 'btn', onClick: () => downloadText(csvFileName(todayStr()), booksToCsv(books, tags), 'text/csv') }, '全部をCSVで書き出す'),
+          h('button', { class: 'btn', onClick: async () => { const how = await saveFile(csvFileName(todayStr()), booksToCsv(books, tags), 'text/csv'); if (how !== 'cancelled') toast(savedMessage(how)); } }, '全部をCSVで書き出す'),
           h('button', { class: 'btn', onClick: () => csvInput.click() }, 'CSVを取り込む')),
+        h('p', { class: 'muted small' }, '書き出すときも送り先を選ぶ画面が出ます。週次整理で読むので、ドライブの「スマホ書斎」フォルダに保存してください。'),
         h('p', { class: 'muted small' }, '取り込みはスマホ書斎で書き出したCSVの形に限ります。今の本棚に追加され、同じISBNの本は飛ばします。'),
         csvInput))],
       rakuten: ['本の表紙（楽天ブックス）', () => titled('本の表紙（楽天ブックス）', h('div', { class: 'card' },

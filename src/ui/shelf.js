@@ -1,6 +1,6 @@
 // 本棚 tab: search, filters, book and work views (spec §4-3).
 
-import { h, fill, downloadText, sheet, segmented } from './dom.js';
+import { h, fill, saveFile, savedMessage, toast, sheet, segmented } from './dom.js';
 import { openTagPicker as pickTags } from './tags.js';
 import { icon } from './icons.js';
 import { filterBooks, sortBooks, SORTS } from '../core/search.js';
@@ -133,7 +133,7 @@ export function mount(container, ctx) {
             Object.assign(state, { ownership: [], readStatus: [], tagIds: [], classCodes: [], staleOnly: false, needsReviewOnly: false });
             render(); draw();
           } }, '条件を外す'),
-          h('button', { class: 'btn', onClick: () => downloadText(csvFileName(todayStr()), booksToCsv(currentBooks, tags), 'text/csv') }, 'この一覧をCSVに')),
+          h('button', { class: 'btn', onClick: async () => { const how = await saveFile(csvFileName(todayStr()), booksToCsv(currentBooks, tags), 'text/csv'); if (how !== 'cancelled') toast(savedMessage(how)); } }, 'この一覧をCSVに')),
         h('button', { class: 'btn primary wide', style: { marginTop: '12px' }, onClick: () => s.close() }, `${currentBooks.length}冊を見る`));
     };
     draw();
