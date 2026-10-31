@@ -271,22 +271,23 @@ export function createLookupQueue({
       return true;
     },
     // Asks the library again for a saved book's 分類 only (books registered before 2026-10-31 lack it).
-    // Returns true when one was found.
+    // Returns 'found', 'none' (the library has no 分類 for it) or 'failed' (no answer: asked again next time).
     async fillClass(id) {
       const book = await db.getBook(id);
-      if (!book?.isbn || book.ndc || !isOnline()) return false;
+      if (book?.ndc) return 'found';
+      if (!book?.isbn || !isOnline()) return 'failed';
       let ndc = '';
       try {
         const text = await ndlFetch(ndlIsbnUrl(book.isbn));
         ndc = (text ? pickBestNdlItem(parseNdlOpenSearch(text, DOMParserImpl))?.ndc : '') || '';
       } catch {
-        return false; // offline or no answer: asked again next time
+        return 'failed';
       }
       const latest = await db.getBook(id);
-      if (!latest) return false;
+      if (!latest) return 'failed';
       const saved = await db.putBook({ ...latest, ndc: latest.ndc || ndc, ndcChecked: true });
       for (const cb of listeners) cb(saved);
-      return Boolean(ndc);
+      return ndc ? 'found' : 'none';
     },
     async fetchMagazine(code) {
       const info = await magazineInfo(code);

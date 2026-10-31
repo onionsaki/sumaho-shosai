@@ -226,13 +226,18 @@ export function mount(container, ctx) {
       if (classing) return;
       classing = true;
       let found = 0;
+      let none = 0;
       for (const [i, b] of noClass.entries()) {
         if (disposed) break;
         classBtn.textContent = `分類を調べています… ${i + 1} / ${noClass.length}`;
-        if (await lookup.fillClass(b.id)) found++;
+        const r = await lookup.fillClass(b.id);
+        if (r === 'found') found++;
+        else if (r === 'none') none++;
       }
       classing = false;
-      toast(`分類を ${found}冊 に付けました${noClass.length - found ? `（${noClass.length - found}冊は国立国会図書館に分類がありませんでした）` : ''}`);
+      const failed = noClass.length - found - none;
+      toast([`分類を${found}冊に付けました。`, none ? `${none}冊は国立国会図書館に分類がありませんでした。` : '',
+        failed ? `${failed}冊は返事がなかったので、もう一度押すと続きから調べます。` : ''].join(''));
       render();
     } }, noClass.length ? `分類を付ける（${noClass.length}冊・約${Math.max(1, Math.ceil(noClass.length / 12))}分。画面はこのままで）` : '分類はすべて調べ済みです');
 

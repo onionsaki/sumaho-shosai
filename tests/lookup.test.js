@@ -328,7 +328,7 @@ test('a CORS-less cached answer (network error) is retried under a fresh address
     return { status: 200, text: async () => fixture('ndl-9784763135476.xml') };
   };
   const q = make(db, fetchImpl, fakeClock());
-  assert.equal(await q.fillClass(book.id), true);
+  assert.equal(await q.fillClass(book.id), 'found');
   assert.equal(calls.length, 2);
   assert.ok(calls[1].endsWith('&idx=1'));
   const saved = await db.getBook(book.id);
