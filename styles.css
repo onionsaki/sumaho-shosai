@@ -1,5 +1,5 @@
 /* Soft, raised surfaces on a pale blue-grey ground (after Yomoo's look, 鬼さん 2026-10-24). */
-/* Colour patterns: 緑 (default), 白, 黒, 青. Switched in 設定 via html[data-theme]. */
+/* Colour patterns: 緑 (default), 白, 黒, 青, 濃い緑, 紺, 生成り. Switched in 設定 via html[data-theme]. */
 :root {
   --bg: #e3ebe6;
   --card: #e8efea;
@@ -53,6 +53,33 @@
   --warn: #e3b067; --warn-soft: #3d3324; --danger: #ef8f9c; --danger-soft: #42282c; --ok: #8fd3a6; --ok-soft: #233a2c;
   --sh-dark: rgba(0, 0, 0, .55); --sh-light: rgba(255, 255, 255, .045);
   color-scheme: dark;
+}
+
+/* 2026-10-31 (鬼さん「濃い緑軸など、色を増やせますか」): 濃い緑・紺 (dark grounds), 生成り (warm paper). */
+:root[data-theme="deepgreen"] {
+  --bg: #17302a; --card: #1c3832; --ink: #e8f0ec; --muted: #9fb8ad; --line: #2b4a42;
+  --accent: #8fd1b0; --accent-ink: #a9e0c3; --accent-soft: #24463d; --on-accent: #0f241e; --accent-glow: rgba(0, 0, 0, .4);
+  --tab-off: #6f8f83; --underline: #5d7d71; --ghost: rgba(255, 255, 255, .08);
+  --cover-a: #2a4d43; --cover-b: #223f37; --cover-ink: #bfd9cc; --toast: #2d5247;
+  --warn: #e8bd78; --warn-soft: #3d3a26; --danger: #f29aa6; --danger-soft: #45302f; --ok: #9be0b4; --ok-soft: #224034;
+  --sh-dark: rgba(0, 0, 0, .5); --sh-light: rgba(255, 255, 255, .05); --gold: #d1b77d;
+  color-scheme: dark;
+}
+:root[data-theme="navy"] {
+  --bg: #1a2233; --card: #1f283b; --ink: #e8ecf3; --muted: #9ea9bd; --line: #2f3a50;
+  --accent: #8fb4e8; --accent-ink: #a9c6ef; --accent-soft: #263552; --on-accent: #0f1a2c; --accent-glow: rgba(0, 0, 0, .4);
+  --tab-off: #6e7a90; --underline: #5b6780; --ghost: rgba(255, 255, 255, .08);
+  --cover-a: #2c3a55; --cover-b: #243049; --cover-ink: #c0cde3; --toast: #2e3d5a;
+  --warn: #e8bd78; --warn-soft: #3b3526; --danger: #f29aa6; --danger-soft: #432c33; --ok: #9be0b4; --ok-soft: #223a33;
+  --sh-dark: rgba(0, 0, 0, .5); --sh-light: rgba(255, 255, 255, .05); --gold: #cdb57f;
+  color-scheme: dark;
+}
+:root[data-theme="kinari"] {
+  --bg: #efe8dc; --card: #f4eee3; --ink: #2b2620; --muted: #7a7064; --line: #ddd2c1;
+  --accent: #7a5a3a; --accent-ink: #6e5033; --accent-soft: #e6dac7; --accent-glow: rgba(122, 90, 58, .3);
+  --tab-off: #a3998c; --underline: #b0a594;
+  --cover-a: #e4d8c4; --cover-b: #d3c3aa; --cover-ink: #5e4c38; --toast: #4a3c2e;
+  --sh-dark: rgba(176, 160, 136, .45);
 }
 
 * { box-sizing: border-box; }

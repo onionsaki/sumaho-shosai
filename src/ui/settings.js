@@ -195,7 +195,7 @@ export function mount(container, ctx) {
 
     // --- colour pattern ---
     const current = applyTheme(theme);
-    const SWATCH = { green: '#2f5d50', white: '#f4f5f6', black: '#1f2326', blue: '#5486bd' };
+    const SWATCH = { green: '#2f5d50', deepgreen: '#17302a', kinari: '#e9dcc6', white: '#f4f5f6', blue: '#5486bd', navy: '#1a2233', black: '#1f2326' };
     const themePick = h('div', { class: 'theme-pick' }, THEMES.map(([v, label]) => h('button', {
       class: v === current ? 'on' : '', onClick: async () => { await db.setSetting('theme', v); applyTheme(v); render(); },
     }, h('span', { class: 'swatch', style: { background: SWATCH[v] } }), label)));
