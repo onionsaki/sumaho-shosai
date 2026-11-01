@@ -161,12 +161,54 @@ export function mount(container, ctx) {
     if (isStale(book, settings.staleRules, todayStr())) badges.push(h('span', { class: 'badge stale' }, '古いかも'));
     if (book.lookup === 'not_found') badges.push(h('span', { class: 'badge review' }, 'あとで確認'));
     if (book.lookup === 'pending') badges.push(h('span', { class: 'badge' }, '情報を取得中'));
-    return h('li', { class: 'book-row', onClick: () => ctx.openDetail(book.id) },
+    const row = h('li', { class: 'book-row', onClick: () => { if (!row.dataset.swiped) ctx.openDetail(book.id); } },
       coverEl(book),
       h('div', { class: 'meta' },
         h('div', { class: 'title' }, displayTitle(book)),
         h('div', { class: 'sub' }, (book.authors ?? []).join('、') || book.isbn || ''),
         badges.length ? h('div', { class: 'badges' }, badges) : null));
+    if (book.ownership === 'not_owned') swipeToOwn(row, book);
+    return row;
+  }
+
+  // 持っていない → 持っている by swiping the row to the left (鬼さん 2026-11-01). Only this way round, so a finger
+  // brushing an owned book while tidying never makes it look gone; 元に戻す undoes it for a few seconds.
+  const SWIPE_DONE = 90;
+  function swipeToOwn(row, book) {
+    row.classList.add('swipeable');
+    let x0 = null, y0 = 0, dx = 0, sideways = false;
+    row.addEventListener('pointerdown', e => { x0 = e.clientX; y0 = e.clientY; dx = 0; sideways = false; delete row.dataset.swiped; });
+    row.addEventListener('pointermove', e => {
+      if (x0 === null) return;
+      dx = e.clientX - x0;
+      if (!sideways && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(e.clientY - y0)) { sideways = true; row.style.transition = 'none'; row.setPointerCapture?.(e.pointerId); }
+      if (!sideways) return;
+      const move = Math.min(0, dx);
+      row.style.transform = `translateX(${move}px)`;
+      row.classList.toggle('swipe-ready', -move >= SWIPE_DONE);
+    });
+    const end = async () => {
+      if (x0 === null) return;
+      x0 = null;
+      row.style.transition = '';
+      row.style.transform = '';
+      row.classList.remove('swipe-ready');
+      if (!sideways) return;
+      row.dataset.swiped = '1'; // the click that follows a swipe does not open the book
+      if (-dx >= SWIPE_DONE) await setOwnership(book, 'owned');
+    };
+    row.addEventListener('pointerup', end);
+    row.addEventListener('pointercancel', end);
+  }
+
+  async function setOwnership(book, ownership) {
+    const saved = await db.putBook({ ...book, ownership });
+    const i = books.findIndex(b => b.id === book.id);
+    if (i >= 0) books[i] = saved;
+    render();
+    if (ownership === 'owned') {
+      toast(`「${displayTitle(book)}」を持っているにしました`, { action: { label: '元に戻す', onClick: () => setOwnership(saved, book.ownership) } });
+    }
   }
 
   function workRow(work) {

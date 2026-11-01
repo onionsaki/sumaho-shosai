@@ -343,17 +343,27 @@ export async function openDetail(bookId, ctx) {
       return;
     }
     const picked = new Set(vols.map(v => v.volume));
+    // Each volume can go in as 持っている or 持っていない (鬼さん 2026-11-01: one by one, not two buttons).
+    const owned = new Set();
     const submit = h('button', { class: 'btn primary wide', style: { marginTop: '16px' } });
     const updateSubmit = () => {
-      submit.textContent = `選んだ${picked.size}冊を「持っていない」で登録`;
+      const n = [...picked].filter(v => owned.has(v)).length;
+      submit.textContent = `選んだ${picked.size}冊を登録（持っている ${n}冊・持っていない ${picked.size - n}冊）`;
       submit.disabled = !picked.size;
     };
     const rows = vols.map(v => {
       const box = h('input', { type: 'checkbox', checked: true });
       box.addEventListener('change', () => { if (box.checked) picked.add(v.volume); else picked.delete(v.volume); updateSubmit(); });
-      return h('li', {}, h('label', { class: 'check-row' }, box,
+      const toggle = h('button', { class: 'own-toggle', onClick: e => {
+        e.preventDefault();
+        if (owned.has(v.volume)) owned.delete(v.volume); else owned.add(v.volume);
+        toggle.textContent = owned.has(v.volume) ? '持っている' : '持っていない';
+        toggle.classList.toggle('on', owned.has(v.volume));
+        updateSubmit();
+      } }, '持っていない');
+      return h('li', { class: 'series-row' }, h('label', { class: 'check-row' }, box,
         h('span', { class: 'check-title' }, `${v.volume}巻`),
-        h('span', { class: 'muted small' }, formatDate(v.issued) || '')));
+        h('span', { class: 'muted small' }, formatDate(v.issued) || '')), toggle);
     });
     const setAll = on => {
       for (const li of rows) li.querySelector('input').checked = on;
@@ -363,22 +373,24 @@ export async function openDetail(bookId, ctx) {
     };
     submit.addEventListener('click', async () => {
       submit.disabled = true;
+      let n = 0;
       for (const v of vols.filter(x => picked.has(x.volume))) {
         await db.putBook(newBook({
           isbn: v.isbn, title: v.title.replace(/\s+=\s+.*$/, ''), titleKana: v.titleKana,
           authors: [...v.authors], authorsKana: [...v.authorsKana], publisher: v.publisher, issued: v.issued,
           pages: v.pages, price: v.price, volume: v.volume, volumeLabel: v.volumeLabel,
           workTitle, workKey: book.workKey, tagIds: [...book.tagIds],
-          ownership: 'not_owned', readStatus: 'unread', lookup: 'ok',
+          ownership: owned.has(v.volume) ? 'owned' : 'not_owned', readStatus: 'unread', lookup: 'ok',
         }));
+        n++;
       }
       changed = true;
-      toast(`${picked.size}冊を「持っていない」で登録しました`);
+      toast(`${n}冊を登録しました`);
       listSheet.close();
     });
     updateSubmit();
     fill(body,
-      h('p', {}, `まだ登録していない巻が${vols.length}冊あります。持っていない巻にチェックを付けたまま登録してください。`),
+      h('p', {}, `まだ登録していない巻が${vols.length}冊あります。持っている巻は、右のボタンを押して「持っている」に切り替えてから登録してください。`),
       h('div', { class: 'row-buttons' },
         h('button', { class: 'btn', onClick: () => setAll(true) }, '全部選ぶ'),
         h('button', { class: 'btn', onClick: () => setAll(false) }, '全部外す')),

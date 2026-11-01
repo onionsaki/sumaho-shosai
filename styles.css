@@ -498,3 +498,13 @@ html, body { overflow-x: clip; max-width: 100%; }
 
 .memo-purpose { margin: 0 0 4px; line-height: 1.6; }
 .memo-purpose div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* 持っていない → 持っている by swiping left (本棚) */
+.book-row.swipeable { touch-action: pan-y; transition: transform .15s ease; }
+.book-row.swipe-ready { background: var(--accent-soft, var(--card)); box-shadow: var(--pressed); }
+
+/* 既刊を探す: each volume switched between 持っている / 持っていない */
+.series-row { display: flex; align-items: center; gap: 8px; }
+.series-row .check-row { flex: 1; min-width: 0; }
+.own-toggle { border: 0; border-radius: 10px; padding: 6px 10px; font-size: 12px; background: var(--card); box-shadow: var(--raise-sm); color: var(--muted); white-space: nowrap; cursor: pointer; }
+.own-toggle.on { background: var(--bg); box-shadow: var(--pressed); color: var(--accent-ink); font-weight: 700; }
