@@ -313,6 +313,8 @@ label.field input:focus { border-bottom-color: var(--accent); box-shadow: none; 
 .rule-row select { min-width: 0; }
 .rule-row .icon-btn { font-size: 18px; min-width: 40px; min-height: 40px; }
 .link-btn { border: 0; background: transparent; color: var(--accent-ink); font-weight: 700; padding: 4px 0; cursor: pointer; font-size: 13px; }
+.memo-tools { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
+.memo-tools .link-btn { text-align: left; }
 .tag-add { display: flex; gap: 8px; margin: 12px 0 4px; }
 .tag-add input { flex: 1; }
 .tag-add .btn { flex: 0 0 auto; }

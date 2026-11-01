@@ -9,7 +9,7 @@ import { pickSeriesVolumes } from '../core/series.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { icon } from './icons.js';
 import { pickPhoto } from './photo.js';
-import { withSections } from '../core/memo.js';
+import { withSections, wrapLink } from '../core/memo.js';
 import { classify } from '../core/ndc.js';
 
 const OWNERSHIP_OPTIONS = Object.entries(LABELS.ownership);
@@ -143,6 +143,16 @@ export async function openDetail(bookId, ctx) {
     memo.focus({ preventScroll: true });
     memo.setSelectionRange(at, at);
     memo.scrollTop = 0;
+  }
+  // [[ ]]で囲む: the word picked in the memo becomes a link for the graph view. pointerdown keeps the
+  // keyboard and the selection, which a normal click would take away from the memo.
+  function addLink() {
+    const { text, cursor } = wrapLink(memo.value, memo.selectionStart, memo.selectionEnd);
+    memo.value = text;
+    saveMemo();
+    fitMemo();
+    memo.focus({ preventScroll: true });
+    memo.setSelectionRange(cursor, cursor);
   }
   s.onClose(saveMemo);
 
@@ -315,7 +325,9 @@ export async function openDetail(bookId, ctx) {
       h('div', { class: 'tag-line' }, icon('tag'), tagRow),
       h('div', { style: { height: '18px' } }),
       memo,
-      h('button', { class: 'link-btn', onClick: addSections }, '問いで書く（学び・体験・疑問など7つの見出しを入れる）'),
+      h('div', { class: 'memo-tools' },
+        h('button', { class: 'link-btn', onClick: addSections }, '問いで書く（学び・体験・疑問など7つの見出しを入れる）'),
+        h('button', { class: 'link-btn', onPointerdown: e => e.preventDefault(), onClick: addLink }, 'つなぐ言葉を [[ ]] で囲む')),
       stateLine,
       h('div', { class: 'section-title' }, '持っているか'),
       segmented(OWNERSHIP_OPTIONS, book.ownership, async v => {

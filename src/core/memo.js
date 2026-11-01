@@ -16,3 +16,19 @@ export function withSections(memo = '', expect = '') {
     : `${heading(name)}\n`));
   return [text, ...blocks].filter(Boolean).join('\n');
 }
+
+// 「[[ ]]で囲む」: words wrapped in [[ ]] become links when the memo is written out to Obsidian,
+// so books that share a word are joined in the graph view (鬼さん 2026-11-01).
+// Selected text is wrapped (spaces around it stay outside); with nothing selected an empty [[]] goes in.
+export function wrapLink(text = '', start = 0, end = start) {
+  const value = String(text ?? '');
+  const picked = value.slice(start, end);
+  const word = picked.trim();
+  if (word.startsWith('[[') && word.endsWith(']]')) return { text: value, cursor: end };
+  const lead = picked.length - picked.trimStart().length;
+  const tail = picked.length - picked.trimEnd().length;
+  const from = start + lead;
+  const to = word ? end - tail : start;
+  const link = `[[${word}]]`;
+  return { text: value.slice(0, from) + link + value.slice(to), cursor: word ? from + link.length : from + 2 };
+}
