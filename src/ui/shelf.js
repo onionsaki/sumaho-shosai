@@ -207,7 +207,8 @@ export function mount(container, ctx) {
     if (i >= 0) books[i] = saved;
     render();
     if (ownership === 'owned') {
-      toast(`「${displayTitle(book)}」を持っているにしました`, { action: { label: '元に戻す', onClick: () => setOwnership(saved, book.ownership) } });
+      // ms is doubled for a toast with a button: 3 seconds (鬼さん: the 元に戻す button stayed too long).
+      toast(`「${displayTitle(book)}」を持っているにしました`, { ms: 1500, action: { label: '元に戻す', onClick: () => setOwnership(saved, book.ownership) } });
     }
   }
 
@@ -225,12 +226,12 @@ export function mount(container, ctx) {
   }
 
   function rows(filtered) {
-    if (state.view === 'books') return filtered.map(b => ({ key: b.id, el: () => bookRow(b) }));
+    if (state.view === 'books') return filtered.map(b => ({ key: b.id, book: b, el: () => bookRow(b) }));
     const works = groupWorks(filtered);
     const singles = filtered.filter(b => b.volume === null || b.volume === undefined);
     const items = [
       ...works.map(w => ({ sort: normalizeForSearch(w.books[0].titleKana || w.workTitle), el: () => workRow(w) })),
-      ...singles.map(b => ({ sort: normalizeForSearch(b.titleKana || b.title), el: () => bookRow(b) })),
+      ...singles.map(b => ({ sort: normalizeForSearch(b.titleKana || b.title), book: b, el: () => bookRow(b) })),
     ];
     if (state.order === 'kana') items.sort((a, b) => a.sort.localeCompare(b.sort, 'ja'));
     return items;
@@ -246,7 +247,10 @@ export function mount(container, ctx) {
       more.textContent = '';
       return;
     }
-    fill(list, ...currentRows.slice(0, shown).map(r => r.el()));
+    // Swiping is invisible until told (鬼さん 2026-11-01), so say it whenever a 持っていない book is listed.
+    const hint = currentRows.some(r => r.book?.ownership === 'not_owned')
+      ? h('li', { class: 'swipe-hint muted small' }, '「持っていない」の本は、左へ払うと「持っている」に変わります') : null;
+    fill(list, hint, ...currentRows.slice(0, shown).map(r => r.el()));
     drawn = Math.min(shown, currentRows.length);
     more.textContent = currentRows.length > shown ? 'さらに読み込み中…' : '';
   }
