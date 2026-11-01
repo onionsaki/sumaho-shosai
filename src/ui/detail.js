@@ -9,7 +9,7 @@ import { pickSeriesVolumes } from '../core/series.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { icon } from './icons.js';
 import { pickPhoto } from './photo.js';
-import { withSections, wrapLink } from '../core/memo.js';
+import { withSections, wrapLink, randomPrompt } from '../core/memo.js';
 import { classify } from '../core/ndc.js';
 import { connectedBooks } from '../core/links.js';
 import { seriesVolume } from '../core/editions.js';
@@ -139,7 +139,7 @@ export async function openDetail(bookId, ctx) {
     sheet(h('div', {}, input, listEl), { title: 'タグ' });
   }
 
-  const memo = h('textarea', { placeholder: 'この本から持ち帰る視点を、ひとつだけ。一行で十分です', value: book.memo });
+  const memo = h('textarea', { placeholder: randomPrompt(), value: book.memo });
   let memoTimer = null;
   const saveMemo = () => { clearTimeout(memoTimer); if (memo.value !== book.memo) save({ memo: memo.value }); };
   memo.addEventListener('input', () => { clearTimeout(memoTimer); memoTimer = setTimeout(saveMemo, 500); });
@@ -400,6 +400,9 @@ export async function openDetail(bookId, ctx) {
       h('div', { class: 'memo-tools' },
         h('button', { class: 'link-btn', onClick: addSections }, '問いで書く'),
         h('button', { class: 'link-btn', onPointerdown: e => e.preventDefault(), onClick: addLink }, '[[ ]]でつなぐ')),
+      h('div', { class: 'memo-purpose small muted' },
+        h('div', {}, '問いで書く：答えるだけで、読み返せるメモに'),
+        h('div', {}, '[[ ]]でつなぐ：同じ言葉の本どうしがつながる')),
       links,
       stateLine,
       h('div', { class: 'section-title' }, '持っているか'),

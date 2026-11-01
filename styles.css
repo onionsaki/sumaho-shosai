@@ -495,3 +495,6 @@ html, body { overflow-x: clip; max-width: 100%; }
 .edition-found { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--card); box-shadow: var(--raise-sm); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
 .edition-head { font-weight: 700; color: var(--accent-ink); }
 .link-book-row { border: 0; background: transparent; text-align: left; width: 100%; padding: 8px 0; color: var(--ink); cursor: pointer; }
+
+.memo-purpose { margin: 0 0 4px; line-height: 1.6; }
+.memo-purpose div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
