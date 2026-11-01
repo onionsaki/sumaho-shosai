@@ -533,3 +533,12 @@ html, body { overflow-x: clip; max-width: 100%; }
 .photo-register-img { display: block; max-width: 60%; max-height: 260px; margin: 0 auto 12px; border-radius: 8px; box-shadow: var(--raise-sm); }
 .paste-row { display: flex; gap: 8px; }
 .paste-row input { flex: 1; min-width: 0; }
+
+/* グラフビューの下: 言葉ごとのメモの行 */
+.word-list { margin-top: 10px; border-top: 1px solid var(--line, rgba(0,0,0,.08)); }
+.word-lines { padding: 10px 4px; border-bottom: 1px solid var(--line, rgba(0,0,0,.08)); border-radius: 8px; transition: background .4s; }
+.word-lines.flash { background: var(--accent-soft, rgba(47,93,80,.12)); }
+.word-head { font-weight: 700; color: var(--accent-ink); font-size: 14px; margin-bottom: 4px; }
+.word-line { font-size: 13px; line-height: 1.6; margin: 4px 0 8px; }
+.word-book { border: 0; background: transparent; padding: 0; color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer; }
+.graph-node.word { cursor: pointer; }

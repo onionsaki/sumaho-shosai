@@ -6,7 +6,7 @@ import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami
 import { todayStr } from '../core/model.js';
 import { isStale } from '../core/stale.js';
 import { seriesVolume } from '../core/editions.js';
-import { buildGraph, layoutGraph } from '../core/graph.js';
+import { buildGraph, layoutGraph, wordLines } from '../core/graph.js';
 import { checkNewerEdition, newerEditionText } from './detail.js';
 
 // A memo counts for 読み返す only when something is written besides the 問いで書く headings.
@@ -145,9 +145,25 @@ export function mount(container, ctx) {
           n.kind === 'book' ? svg('rect', { x: -6, y: -6, width: 12, height: 12, rx: 3 }) : svg('circle', { r: 4 + Math.min(n.degree, 6) }),
           svg('text', { y: n.kind === 'book' ? 20 : -10, 'text-anchor': 'middle' }, label));
         if (n.kind === 'book') g.addEventListener('click', () => ctx.openDetail(n.id));
+        else g.addEventListener('click', () => showWord(n.id));
         picture.append(g);
       }
-      fill(graphBox, picture, h('p', { class: 'muted small', style: { margin: '6px 0 0' } }, `■ 本 ${graph.nodes.filter(n => n.kind === 'book').length}冊　● 言葉 ${graph.nodes.filter(n => n.kind === 'word').length}個。本を押すとその本が開きます。`));
+      // The memo lines behind each word, under the picture (鬼さん 2026-11-01). Pressing a word jumps here.
+      const groups = new Map(wordLines(books).map(w => [w.key, h('div', { class: 'word-lines' },
+        h('div', { class: 'word-head' }, `[[${w.word}]]`, h('span', { class: 'muted small' }, `　${new Set(w.items.map(i => i.bookId)).size}冊`)),
+        w.items.map(i => h('div', { class: 'word-line' },
+          h('button', { class: 'word-book', onClick: () => ctx.openDetail(i.bookId) }, i.title),
+          h('div', {}, i.line))))]));
+      const showWord = key => {
+        const el = groups.get(key);
+        if (!el) return;
+        el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        el.classList.add('flash');
+        setTimeout(() => el.classList.remove('flash'), 1200);
+      };
+      fill(graphBox, picture,
+        h('p', { class: 'muted small', style: { margin: '6px 0 0' } }, `■ 本 ${graph.nodes.filter(n => n.kind === 'book').length}冊　● 言葉 ${graph.nodes.filter(n => n.kind === 'word').length}個。本を押すとその本が開き、言葉を押すと下のメモに移ります。`),
+        h('div', { class: 'word-list' }, [...groups.values()]));
     }
 
     const titled = (title, ...body) => [h('div', { class: 'section-title' }, title), ...body];

@@ -65,3 +65,21 @@ export function layoutGraph({ nodes, edges }, width, height, iterations = 300) {
   for (const [id, p] of pos) out[id] = { x: Math.round(p.x), y: Math.round(p.y) };
   return out;
 }
+
+// Under the graph (鬼さん 2026-11-01): for each word, the memo lines that carry it, so what was written can be
+// read next to the picture. Words joining more books come first. key matches the word's node id.
+export function wordLines(books) {
+  const byKey = new Map();
+  for (const b of books) {
+    if (!b.memo?.includes('[[')) continue;
+    for (const line of b.memo.split('\n')) {
+      for (const w of linkWords(line)) {
+        const key = `w:${normalizeForSearch(w)}`;
+        if (!byKey.has(key)) byKey.set(key, { key, word: w, items: [] });
+        byKey.get(key).items.push({ bookId: b.id, title: b.title || '（書名なし）', line: line.trim() });
+      }
+    }
+  }
+  const bookCount = w => new Set(w.items.map(i => i.bookId)).size;
+  return [...byKey.values()].sort((a, b) => bookCount(b) - bookCount(a));
+}
