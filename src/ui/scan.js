@@ -20,6 +20,9 @@ import { newWish, openWishesFor } from '../core/wish.js';
 const MODES = [['register', '登録（片付け）'], ['check', '確認（本屋）']];
 const OWNERSHIP_OPTIONS = [['owned', '持っている'], ['released', '手放した'], ['not_owned', '持っていない']];
 const READ_OPTIONS = ['read', 'reading', 'unread'].map(v => [v, LABELS.read[v]]);
+// To save the battery (鬼さん 2026-11-01): the camera closes after a minute without a read, and stops while
+// another app is in front (it opens again on return).
+export const CAMERA_IDLE_MS = 60_000;
 
 export function mount(container, ctx) {
   const { db, lookup } = ctx;
@@ -27,6 +30,7 @@ export function mount(container, ctx) {
   const feedback = ctx.feedback;
   let stopCamera = null;
   let wakeLock = null;
+  let cam = null; // { video, opts, onIdle, idleTimer } while a camera session is open, paused or not
   let disposed = false;
   let cleanup = () => {};
   const body = h('div');
@@ -34,35 +38,70 @@ export function mount(container, ctx) {
   async function keepAwake() {
     try { wakeLock = await navigator.wakeLock?.request('screen'); } catch { wakeLock = null; }
   }
-  const onVisible = () => { if (document.visibilityState === 'visible' && stopCamera) keepAwake(); };
+  function armIdle() {
+    if (!cam) return;
+    clearTimeout(cam.idleTimer);
+    cam.idleTimer = setTimeout(async () => {
+      const onIdle = cam?.onIdle;
+      await stop();
+      toast('1分間読み取りがなかったので、カメラを閉じました');
+      onIdle?.();
+    }, CAMERA_IDLE_MS);
+  }
+  async function onVisible() {
+    if (!cam) return;
+    if (document.visibilityState === 'hidden') {
+      clearTimeout(cam.idleTimer);
+      if (stopCamera) { stopCamera(); stopCamera = null; }
+      return;
+    }
+    if (stopCamera) return;
+    const session = cam;
+    try {
+      const s = await startCamera(session.video, session.opts);
+      if (cam !== session || stopCamera) { s(); return; } // closed while it was opening
+      stopCamera = s;
+      armIdle();
+      keepAwake();
+    } catch {
+      toast('カメラを開き直せませんでした');
+    }
+  }
   document.addEventListener('visibilitychange', onVisible);
 
   async function stop() {
+    clearTimeout(cam?.idleTimer);
+    cam = null;
     if (stopCamera) { stopCamera(); stopCamera = null; }
     try { await wakeLock?.release(); } catch { /* already released */ }
     wakeLock = null;
   }
 
   // A slow phone may need over a second per read, so the two matching reads may be up to 3 s apart.
-  async function start(video, handle, statusEl) {
+  // onIdle runs after the camera has closed itself for lack of reads.
+  async function start(video, handle, statusEl, onIdle) {
     feedback.unlock();
     const confirmer = createConfirmer({ windowMs: 3000 });
     let chain = Promise.resolve();
     if (statusEl) statusEl.textContent = 'カメラを準備しています…';
     try {
-      stopCamera = await startCamera(video, {
+      const opts = {
         onCode: raw => {
           const kind = classifyBarcode(raw).kind;
           if (kind !== 'isbn' && kind !== 'magazine') return; // the price barcode next to the ISBN is ignored
           const code = confirmer.push(raw, performance.now());
           if (!code) return;
+          armIdle();
           chain = chain.then(() => handle(code)).catch(err => toast(`エラー：${err?.message ?? err}`));
         },
         onStatus: st => {
           if (statusEl) statusEl.textContent = `読み取り：${st.kind}・${st.ticks}回・1回${st.ms}ms・最後に見えた番号 ${st.last || 'なし'}`;
         },
         onError: err => { if (statusEl) statusEl.textContent = `読み取りエラー：${err?.message ?? err}`; },
-      });
+      };
+      stopCamera = await startCamera(video, opts);
+      cam = { video, opts, onIdle, idleTimer: null };
+      armIdle();
       await keepAwake();
       return true;
     } catch {
@@ -209,7 +248,7 @@ export function mount(container, ctx) {
       statusEl,
     );
     render();
-    start(video, handle, statusEl).then(ok => { if (!ok) statusEl.textContent = 'カメラを使えません。下の欄に番号を打って登録できます'; });
+    start(video, handle, statusEl, finish).then(ok => { if (!ok) statusEl.textContent = 'カメラを使えません。下の欄に番号を打って登録できます'; });
   }
 
   // ---------- check mode ----------
@@ -220,17 +259,20 @@ export function mount(container, ctx) {
     let running = false;
     const cameraSlot = h('div');
     // 鬼さん 2026-10-24: a way to close the camera and the answer once it is known.
-    const closeCamera = h('button', { class: 'btn wide', style: { marginTop: '12px' }, onClick: async () => {
-      await stop();
+    const closed = (keepAnswer = false) => {
       running = false;
       statusEl.textContent = '';
-      fill(card);
+      if (!keepAnswer) fill(card);
       fill(cameraSlot, startTile);
+    };
+    const closeCamera = h('button', { class: 'btn wide', style: { marginTop: '12px' }, onClick: async () => {
+      await stop();
+      closed();
     } }, 'カメラを閉じる');
     const startTile = h('button', { class: 'tile', onClick: async () => {
       if (running) return;
       fill(cameraSlot, h('div', { class: 'camera-box' }, video, h('div', { class: 'guide' })));
-      running = await start(video, handle, statusEl);
+      running = await start(video, handle, statusEl, () => closed(true)); // the answer stays when it closes itself
       if (running) cameraSlot.append(closeCamera);
       else fill(cameraSlot, startTile);
     } }, h('div', {}, '本屋で確認'), icon('barcode'), h('div', { class: 'sub' }, '持っているかを確かめます。何も保存しません'));

@@ -87,7 +87,7 @@ export async function startCamera(video, { onCode, onError, onStatus }) {
         onStatus?.({ kind: detectorKind, ticks, last, ms: lastMs });
         busy = false;
       }
-    }, 120);
+    }, 200); // about 5 reads a second (was 8 until 2026-11-01, to save the battery)
   }
   if (isDev()) window.__fakeScan = raw => onCode(String(raw));
 
