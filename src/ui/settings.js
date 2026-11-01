@@ -9,6 +9,7 @@ import { THEMES, applyTheme } from './theme.js';
 import { applyOrder, moveItem } from '../core/order.js';
 import { needsClass, ALL_CLASSES } from '../core/ndc.js';
 import { isMagazineCode } from '../core/isbn.js';
+import { isOpenWish } from '../core/wish.js';
 
 const readFile = file => new Promise((resolve, reject) => {
   const r = new FileReader();
@@ -172,20 +173,33 @@ export function mount(container, ctx) {
     const keyInput = h('input', { type: 'text', value: rakutenAccessKey ?? '', autocomplete: 'off', spellcheck: false });
     const googleInput = h('input', { type: 'text', value: googleBooksKey ?? '', autocomplete: 'off', spellcheck: false });
     const noCover = books.filter(b => b.isbn && !b.coverUrl);
+    // 欲しい本 too (鬼さん 2026-11-01): asked again even if looked for before, since this is pressed on purpose.
+    const wishesNoCover = (await db.allWishes()).filter(w => isOpenWish(w) && w.isbn && !w.coverUrl);
+    const coverTotal = noCover.length + wishesNoCover.length;
     let filling = false;
-    const fillBtn = h('button', { class: 'btn wide', style: { marginTop: '10px' }, disabled: !((rakutenAppId && rakutenAccessKey) || googleBooksKey) || !noCover.length, onClick: async () => {
+    const fillBtn = h('button', { class: 'btn wide', style: { marginTop: '10px' }, disabled: !((rakutenAppId && rakutenAccessKey) || googleBooksKey) || !coverTotal, onClick: async () => {
       if (filling) return;
       filling = true;
       let added = 0;
       for (const [i, b] of noCover.entries()) {
         if (disposed) break;
-        fillBtn.textContent = `表紙を探しています… ${i + 1} / ${noCover.length}`;
+        fillBtn.textContent = `表紙を探しています… ${i + 1} / ${coverTotal}`;
         if (await lookup.fillCover(b.id)) added++;
       }
+      for (const [i, w] of wishesNoCover.entries()) {
+        if (disposed) break;
+        fillBtn.textContent = `表紙を探しています… ${noCover.length + i + 1} / ${coverTotal}`;
+        const url = await lookup.coverFor(w.isbn);
+        if (url === null) break; // offline
+        const latest = (await db.allWishes()).find(x => x.id === w.id);
+        if (!latest || latest.isbn !== w.isbn) continue;
+        await db.putWish({ ...latest, coverUrl: url, coverCheckedAt: todayStr() });
+        if (url) added++;
+      }
       filling = false;
-      toast(`表紙を ${added}冊 に付けました${noCover.length - added ? `（${noCover.length - added}冊は見つかりませんでした）` : ''}`);
+      toast(`表紙を ${added}冊 に付けました${coverTotal - added ? `（${coverTotal - added}冊は見つかりませんでした）` : ''}`);
       render();
-    } }, `表紙のない本に表紙を付ける（${noCover.length}冊・約${Math.max(1, Math.ceil(noCover.length / 60))}分）`);
+    } }, `表紙のない本に表紙を付ける（${noCover.length}冊${wishesNoCover.length ? `＋欲しい本${wishesNoCover.length}冊` : ''}・約${Math.max(1, Math.ceil(coverTotal / 60))}分）`);
 
     // --- 分類 for books registered before it was saved (2026-10-31) ---
     const noClass = books.filter(b => needsClass(b, isMagazineCode));
@@ -259,7 +273,7 @@ export function mount(container, ctx) {
           toast(googleInput.value.trim() ? '保存しました。表紙が見つからない本は Google Books からも探します' : 'Google Books を使わない設定にしました');
           render();
         } }, '保存する'),
-        h('p', { class: 'muted small' }, '「表紙のない本に表紙を付ける」は、楽天の欄のボタンから。楽天→Google Books の順に探します。')))],
+        h('p', { class: 'muted small' }, '「表紙のない本に表紙を付ける」は、楽天の欄のボタンから。楽天→Google Books の順に探します。欲しい本の表紙も一緒に探します。')))],
       stale: ['古いかもの判定', () => titled('古いかもの判定', h('div', { class: 'card' },
         h('p', { class: 'muted small', style: { marginTop: 0 } }, 'このタグの本は、発行からこの年数がたったら「古いかも」と出します'),
         ruleRows.length ? ruleRows : h('p', { class: 'small' }, '（使っていません）'),
