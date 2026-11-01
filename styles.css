@@ -508,3 +508,10 @@ html, body { overflow-x: clip; max-width: 100%; }
 .series-row .check-row { flex: 1; min-width: 0; }
 .own-toggle { border: 0; border-radius: 10px; padding: 6px 10px; font-size: 12px; background: var(--card); box-shadow: var(--raise-sm); color: var(--muted); white-space: nowrap; cursor: pointer; }
 .own-toggle.on { background: var(--bg); box-shadow: var(--pressed); color: var(--accent-ink); font-weight: 700; }
+
+/* このアプリについて */
+.about { font-size: 14px; line-height: 1.75; }
+.about-section h3 { font-family: var(--serif); font-size: 15px; margin: 20px 0 6px; }
+.about-list { padding-left: 1.2em; margin: 0; }
+.about-list li { margin: 4px 0; }
+.about a { color: var(--accent-ink); }

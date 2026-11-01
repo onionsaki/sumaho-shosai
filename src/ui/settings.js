@@ -6,6 +6,7 @@ import { makeBackup, validateBackup, backupFileName, restoredSettings } from '..
 import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami, SHELF_ROOM, tsundokuVsRead } from '../core/stats.js';
 import { checkNewerEdition, newerEditionText } from './detail.js';
 import { seriesVolume } from '../core/editions.js';
+import { openAbout, rakutenCredit } from './about.js';
 import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
 import { isStale } from '../core/stale.js';
@@ -373,8 +374,9 @@ export function mount(container, ctx) {
       ...order.flatMap(id => sections[id][1]()),
       h('button', { class: 'btn wide', style: { marginTop: '24px' }, onClick: openOrderSheet }, '設定の並び順を変える'),
 
-      h('p', { class: 'muted small', style: { marginTop: '24px' } },
-        '本の情報は、国立国会図書館サーチのAPIと openBD を利用して取得しています。', rakutenAppId ? ' 表紙の一部は楽天ブックスから取得しています（Supported by Rakuten Developers）。' : ''),
+      h('button', { class: 'btn wide', style: { marginTop: '10px' }, onClick: openAbout }, 'このアプリについて（プライバシーポリシー・免責・クレジット）'),
+      h('p', { class: 'muted small', style: { marginTop: '16px' } },
+        '本の情報は、国立国会図書館サーチのAPIと openBD を利用して取得しています。', rakutenAppId ? h('span', {}, ' 表紙の一部は楽天ブックスから取得しています：', rakutenCredit()) : ''),
     );
   }
 
