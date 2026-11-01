@@ -104,7 +104,7 @@ button, input, select, textarea { font: inherit; color: inherit; }
 
 .tabbar {
   position: fixed; left: 0; right: 0; bottom: 0; z-index: 6;
-  display: grid; grid-template-columns: repeat(3, 1fr);
+  display: grid; grid-template-columns: repeat(4, 1fr);
   background: var(--bg); box-shadow: 0 -6px 14px var(--sh-dark);
   padding-bottom: env(safe-area-inset-bottom);
 }
@@ -515,3 +515,15 @@ html, body { overflow-x: clip; max-width: 100%; }
 .about-list { padding-left: 1.2em; margin: 0; }
 .about-list li { margin: 4px 0; }
 .about a { color: var(--accent-ink); }
+
+/* 活用: 読み返す・グラフビュー */
+.readback-title { font-family: var(--serif); font-weight: 600; font-size: 15px; margin-bottom: 6px; }
+.readback-memo { white-space: pre-wrap; font-size: 14px; line-height: 1.7; max-height: 16em; overflow: auto; }
+.graph-card { padding: 8px; }
+.graph { width: 100%; height: auto; display: block; }
+.graph-edge { stroke: var(--muted); stroke-opacity: .45; stroke-width: 1; }
+.graph-node text { font-size: 10px; fill: var(--ink); }
+.graph-node.word circle { fill: var(--accent); fill-opacity: .85; }
+.graph-node.word text { fill: var(--accent-ink); font-weight: 700; }
+.graph-node.book rect { fill: var(--card); stroke: var(--ink); stroke-width: 1.2; }
+.graph-node.book { cursor: pointer; }

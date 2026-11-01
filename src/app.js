@@ -8,6 +8,7 @@ import { applyTheme } from './ui/theme.js';
 const TABS = {
   scan: () => import('./ui/scan.js'),
   shelf: () => import('./ui/shelf.js'),
+  katsuyo: () => import('./ui/katsuyo.js'),
   settings: () => import('./ui/settings.js'),
 };
 
