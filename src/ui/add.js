@@ -2,7 +2,8 @@
 
 import { h, fill, sheet, toast, segmented } from './dom.js';
 import { LABELS, newBook, todayStr } from '../core/model.js';
-import { toIsbn13 } from '../core/isbn.js';
+import { toIsbn13, findIsbnInText } from '../core/isbn.js';
+import { readIsbnFromPhoto, takePhoto } from '../ocr.js';
 import { workKeyOf } from '../core/volume.js';
 import { normalizeForSearch } from '../core/normalize.js';
 import { OfflineError } from '../lookup.js';
@@ -101,7 +102,8 @@ export function openAdd(ctx) {
     const input = h('input', { type: 'text', inputmode: 'numeric', placeholder: '978… または 10桁' });
     const status = h('p', { class: 'small muted' });
     const go = h('button', { class: 'btn primary wide', style: { marginTop: '14px' }, onClick: async () => {
-        const isbn = toIsbn13(input.value);
+        // Also takes text pasted from Google Lens and the like (「ISBN978-4-…」).
+        const isbn = toIsbn13(input.value) ?? findIsbnInText(input.value);
         if (!isbn) { status.textContent = 'ISBNの数字が正しくありません'; return; }
         if (await openExisting(isbn)) return;
         status.textContent = '本の情報を調べています…';
@@ -109,9 +111,30 @@ export function openAdd(ctx) {
         await finish(newBook({ ...(info ?? {}), isbn, ...stamp(), lookup: info ? 'ok' : 'pending' }), { enqueue: !info });
       } }, '登録する');
     s.setAction('登録', () => go.click());
+    // 数字を写真で読む: for books with the ISBN printed only as text. The number is filled in, not registered,
+    // so a misread can be seen and fixed before 登録する.
+    const ocr = h('button', { class: 'btn wide', style: { marginTop: '10px' }, onClick: async () => {
+        const file = await takePhoto();
+        if (!file) return;
+        ocr.disabled = true;
+        status.textContent = '写真の数字を読んでいます…（初めてのときは部品の読み込みに少しかかります）';
+        try {
+          const isbn = await readIsbnFromPhoto(file);
+          if (isbn) {
+            input.value = isbn;
+            status.textContent = `読めた番号：${isbn}　合っていれば「登録する」を押してください`;
+          } else {
+            status.textContent = '番号を見つけられませんでした。ISBNの行が大きく写るように近づいて撮るか、数字を打ってください';
+          }
+        } catch (err) {
+          status.textContent = `読み取れませんでした（${err.message || err}）。電波のある場所で一度使うと、次からは電波がなくても読めます`;
+        } finally {
+          ocr.disabled = false;
+        }
+      } }, h('span', {}, icon('camera'), ' 数字を写真で読む（バーコードがない本）'));
     fill(body,
       h('label', { class: 'field' }, h('span', {}, 'ISBN（ハイフンがあってもよい）'), input),
-      options(), go, status);
+      ocr, options(), go, status);
   }
 
   function showManual() {

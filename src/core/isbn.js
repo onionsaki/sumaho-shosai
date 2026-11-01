@@ -35,6 +35,27 @@ export function toIsbn13(input) {
   return null;
 }
 
+// 数字を写真で読む: the photo reader returns rough text, so the ISBN is picked out of it here (鬼さん 2026-11-01:
+// books whose ISBN is printed only as text). Letters often read in place of digits (O→0, I/L/|→1) are fixed, and
+// only a number whose check digit agrees is returned. On 鬼さん's photo the 9 of 978 was swallowed into the
+// "ISBN" letters, so a 12-digit 78…/79… run gets its 9 back when the check digit then agrees.
+export function findIsbnInText(text) {
+  const s = String(text ?? '').normalize('NFKC').toUpperCase().replace(/ISBN:?/g, ' ')
+    .replace(/[OQ]/g, '0').replace(/[IL|!]/g, '1');
+  const runs = s.match(/[0-9X](?:[\s.\-‐–—―ー]*[0-9X])*/g) ?? [];
+  const found = [];
+  for (const run of runs) {
+    const d = run.replace(/[^0-9X]/g, '');
+    const windows = n => Array.from({ length: Math.max(0, d.length - n + 1) }, (_, i) => d.slice(i, i + n));
+    for (const w of windows(13)) if (isValidIsbn13(w)) found.push([0, w]);
+    for (const w of windows(12)) if (/^7[89]/.test(w) && isValidIsbn13(`9${w}`)) found.push([1, `9${w}`]);
+    // A ten-digit ISBN stands on its own; windows inside a longer run would match by chance (1 in 11).
+    if (d.length <= 11) for (const w of windows(10)) if (/^\d{9}[\dX]$/.test(w) && toIsbn13(w)) found.push([2, toIsbn13(w)]);
+  }
+  found.sort((a, b) => a[0] - b[0]);
+  return found[0]?.[1] ?? null;
+}
+
 export function classifyBarcode(raw) {
   const s = String(raw ?? '');
   if (isValidIsbn13(s)) return { kind: 'isbn', isbn: s };

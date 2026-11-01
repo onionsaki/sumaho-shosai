@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { isValidIsbn13, toIsbn13, classifyBarcode } from '../src/core/isbn.js';
+import { isValidIsbn13, toIsbn13, classifyBarcode, findIsbnInText } from '../src/core/isbn.js';
 
 test('valid isbn13', () => {
   assert.equal(isValidIsbn13('9784763135476'), true);
@@ -48,4 +48,26 @@ test('magazineBase strips the issue part of a magazine title', async () => {
   assert.equal(magazineBase('週刊少年ジャンプ 2026年 11/16号'), '週刊少年ジャンプ');
   assert.equal(magazineBase('雑誌24034 2025年1月号'), '');
   assert.equal(magazineKey('4910240340155'), 'magazine:24034');
+});
+
+test('an ISBN printed as text is found in what the photo reader returned', () => {
+  // Real result from 鬼さん's photo (2026-11-01): "ISBN" came back as "1".
+  assert.equal(findIsbnInText('Ses 3 is\n1978-4-06-518944-3\n] 4'), '9784065189443');
+  assert.equal(findIsbnInText('ISBN978-4-06-518944-3'), '9784065189443');
+  assert.equal(findIsbnInText('ISBN 978 4 06 518944 3'), '9784065189443');
+});
+
+test('the 9 of 978 swallowed into the ISBN letters is put back when the check digit agrees', () => {
+  assert.equal(findIsbnInText('NO78-4-06-518944-3'), '9784065189443');
+});
+
+test('letters read in place of digits are fixed, and ten-digit ISBNs are turned into thirteen', () => {
+  assert.equal(findIsbnInText('ISBN978-4-O6-5l8944-3'), '9784065189443');
+  assert.equal(findIsbnInText('ISBN4-06-518944-2'), toIsbn13('4065189442'));
+});
+
+test('nothing is made up when no number passes the check digit', () => {
+  assert.equal(findIsbnInText('C0033 ¥1500E 定価'), null);
+  assert.equal(findIsbnInText('978-4-06-518944-4'), null);
+  assert.equal(findIsbnInText(''), null);
 });

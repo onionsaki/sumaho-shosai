@@ -1,8 +1,11 @@
 // Service worker: cache-first app shell so the app opens without a signal (spec §7).
 // Bump VERSION and keep APP_FILES complete whenever a loaded file is added or changed.
 
-const VERSION = '36';
+const VERSION = '37';
 const CACHE = `sumaho-shosai-v${VERSION}`;
+// The photo reader (vendor/tesseract/, ~7MB) is kept apart: loaded on first use, then kept across versions.
+const OCR_CACHE = 'sumaho-shosai-ocr-5.1.1';
+const isOcrFile = url => url.pathname.includes('/vendor/tesseract/');
 const APP_FILES = [
   './',
   'index.html',
@@ -53,6 +56,7 @@ const APP_FILES = [
   'src/ui/wishes.js',
   'src/core/csv.js',
   'src/core/backup.js',
+  'src/ocr.js',
   'vendor/barcode-detector/ponyfill.js',
   'vendor/barcode-detector/zxing-exported.js',
   'vendor/barcode-detector/zxing_reader.wasm',
@@ -64,7 +68,7 @@ self.addEventListener('install', event => {
 
 self.addEventListener('activate', event => {
   event.waitUntil((async () => {
-    for (const key of await caches.keys()) if (key !== CACHE) await caches.delete(key);
+    for (const key of await caches.keys()) if (key !== CACHE && key !== OCR_CACHE) await caches.delete(key);
     await self.clients.claim();
   })());
 });
@@ -77,6 +81,11 @@ self.addEventListener('fetch', event => {
   event.respondWith((async () => {
     const cached = await caches.match(request, { ignoreSearch: true });
     if (cached) return cached;
+    if (isOcrFile(url)) {
+      const res = await fetch(request);
+      if (res.ok) (await caches.open(OCR_CACHE)).put(request, res.clone());
+      return res;
+    }
     try {
       return await fetch(request);
     } catch (err) {
