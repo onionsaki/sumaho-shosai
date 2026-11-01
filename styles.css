@@ -528,3 +528,8 @@ html, body { overflow-x: clip; max-width: 100%; }
 .graph-node.book rect { fill: var(--card); stroke: var(--ink); stroke-width: 1.2; }
 .graph-node.book { cursor: pointer; }
 .swipe-hint { list-style: none; padding: 0 4px 2px; }
+
+/* 写真で登録 */
+.photo-register-img { display: block; max-width: 60%; max-height: 260px; margin: 0 auto 12px; border-radius: 8px; box-shadow: var(--raise-sm); }
+.paste-row { display: flex; gap: 8px; }
+.paste-row input { flex: 1; min-width: 0; }

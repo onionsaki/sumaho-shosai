@@ -14,6 +14,7 @@ import { openTagPicker, tagSummary } from './tags.js';
 import { icon } from './icons.js';
 import { wishList, openWishEditor } from './wishes.js';
 import { displayTitle } from './shelf.js';
+import { photoRegister } from './photo-register.js';
 import { newWish, openWishesFor } from '../core/wish.js';
 
 const MODES = [['register', '登録（片付け）'], ['check', '確認（本屋）']];
@@ -108,6 +109,10 @@ export function mount(container, ctx) {
         await db.setSetting('lastSession', session);
         runRegister(session, tags);
       } }, h('div', {}, 'バーコードで登録'), icon('barcode'), h('div', { class: 'sub' }, '押すとカメラが開きます')),
+      h('button', { class: 'tile small', onClick: async () => {
+        await db.setSetting('lastSession', session);
+        photoRegister(session, ctx);
+      } }, h('div', {}, '写真で登録（バーコードなし）'), icon('camera')),
       h('button', { class: 'tile small', onClick: () => ctx.openAdd() },
         h('div', {}, '書名・番号で登録'), icon('plus')),
       h('div', { class: 'section-title' }, 'この回に読み取る本へ、まとめて付ける内容'),
