@@ -285,6 +285,11 @@ export function createLookupQueue({
       }
       return text ? parseNdlOpenSearch(text, DOMParserImpl) : [];
     },
+    // A cover for an ISBN alone (欲しい本): openBD, then Rakuten and Google Books. '' when none, null when offline.
+    async coverFor(isbn) {
+      if (!isbn || !isOnline()) return null;
+      return (await openBdFetch(isbn))?.coverUrl || keyedCover(isbn);
+    },
     // Adds a Rakuten cover to a saved book that has none. Returns true when one was added.
     async fillCover(id) {
       const book = await db.getBook(id);

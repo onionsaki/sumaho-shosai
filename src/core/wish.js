@@ -13,6 +13,8 @@ export function newWish(partial = {}) {
     author: '', // 国立国会図書館で探したときの正しい著者名（2026-10-26）
     expect: '', // 何を期待して買うか
     where: '', // 見つけた場所や値段
+    coverUrl: '', // 表紙（2026-11-01）: looked up once by ISBN, openBD → 楽天 → Google Books
+    coverCheckedAt: '', // set once the cover has been looked for, found or not, so it is not asked again
     createdAt: now,
     updatedAt: now,
     boughtAt: '', // set when the book is registered as 持っている
@@ -21,6 +23,15 @@ export function newWish(partial = {}) {
 }
 
 export const isOpenWish = w => !w.boughtAt;
+
+// A wish whose cover has not been looked for yet (wishes from before 2026-11-01 have neither field), or was
+// not found more than 30 days ago (a key may have been added since, or a cover published).
+export const COVER_RETRY_DAYS = 30;
+export function needsCover(w, today = todayStr()) {
+  if (!isOpenWish(w) || !w.isbn || w.coverUrl) return false;
+  if (!w.coverCheckedAt) return true;
+  return (Date.parse(today) - Date.parse(w.coverCheckedAt)) / 86400000 >= COVER_RETRY_DAYS;
+}
 
 export const openWishesFor = (wishes, isbn) => (isbn ? wishes.filter(w => isOpenWish(w) && w.isbn === isbn) : []);
 
@@ -41,4 +52,4 @@ export function wishCandidates(books) {
     .map(book => ({ book, ticked: !(book.workKey && ownedWorks.has(book.workKey) && book.volume !== null && book.volume !== undefined) }));
 }
 
-export const wishFromBook = (book, title) => newWish({ isbn: book.isbn ?? '', title, author: (book.authors ?? []).join('、'), expect: book.memo ?? '', createdAt: book.createdAt });
+export const wishFromBook = (book, title) => newWish({ isbn: book.isbn ?? '', title, author: (book.authors ?? []).join('、'), expect: book.memo ?? '', coverUrl: book.coverUrl ?? '', createdAt: book.createdAt });

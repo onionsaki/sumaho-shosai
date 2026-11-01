@@ -2,8 +2,8 @@
 
 import { h, fill, sheet, toast, confirmDialog, formatDate } from './dom.js';
 import { icon } from './icons.js';
-import { displayTitle } from './shelf.js';
-import { newWish, splitWishes, markBought, wishCandidates, wishFromBook } from '../core/wish.js';
+import { displayTitle, coverEl } from './shelf.js';
+import { newWish, splitWishes, markBought, wishCandidates, wishFromBook, needsCover } from '../core/wish.js';
 import { todayStr } from '../core/model.js';
 import { OfflineError } from '../lookup.js';
 
@@ -49,7 +49,8 @@ export function openWishEditor(ctx, wish, onSaved = () => {}, isNew = false) {
   async function save() {
     const name = title.value.trim();
     if (!name) { toast('書名を入れてください'); return; }
-    await db.putWish({ ...wish, isbn, title: name, author: author.value.trim(), expect: expect.value.trim(), where: where.value.trim() });
+    const cover = isbn === wish.isbn ? {} : { coverUrl: '', coverCheckedAt: '' }; // another book: look again
+    await db.putWish({ ...wish, ...cover, isbn, title: name, author: author.value.trim(), expect: expect.value.trim(), where: where.value.trim() });
     toast(isNew ? '欲しい本に追加しました' : '保存しました');
     s.close();
     onSaved();
@@ -113,15 +114,36 @@ function openMoveSheet(ctx, candidates, onDone) {
 export function wishList(ctx) {
   const { db } = ctx;
   const el = h('div', { class: 'wish-list' });
+  // Covers are looked for one wish at a time after the list is drawn, then saved so they show offline.
+  let filling = false;
+  async function fillCovers(wishes) {
+    if (filling) return;
+    filling = true;
+    let found = 0;
+    try {
+      for (const w of wishes.filter(needsCover)) {
+        const url = await ctx.lookup.coverFor(w.isbn);
+        if (url === null) break; // offline: try again next time
+        const latest = (await db.allWishes()).find(x => x.id === w.id);
+        if (!latest || latest.isbn !== w.isbn) continue;
+        await db.putWish({ ...latest, coverUrl: url, coverCheckedAt: todayStr() });
+        if (url) found++;
+      }
+    } finally {
+      filling = false;
+    }
+    if (found) refresh();
+  }
   async function refresh() {
     const [wishes, books] = await Promise.all([db.allWishes(), db.allBooks()]);
     const { open, bought } = splitWishes(wishes);
     const candidates = wishCandidates(books);
     const row = w => h('li', {}, h('button', { class: 'wish-row', onClick: () => openWishEditor(ctx, w, refresh) },
+      coverEl(w), h('span', { class: 'wish-text' },
       h('span', { class: 'wish-title' }, w.title),
       w.author ? h('span', { class: 'muted small' }, w.author) : null,
       w.expect ? h('span', { class: 'muted small wish-expect' }, w.expect) : null,
-      w.where || w.boughtAt ? h('span', { class: 'muted small' }, [w.boughtAt ? `${formatDate(w.boughtAt)} 購入` : '', w.where].filter(Boolean).join('・')) : null));
+      w.where || w.boughtAt ? h('span', { class: 'muted small' }, [w.boughtAt ? `${formatDate(w.boughtAt)} 購入` : '', w.where].filter(Boolean).join('・')) : null)));
     fill(el,
       h('div', { class: 'section-title wish-head' }, `欲しい本（${open.length}）`,
         h('button', { class: 'round-btn small-round', 'aria-label': '欲しい本を足す', onClick: () => openWishEditor(ctx, newWish(), refresh, true) }, icon('plus'))),
@@ -132,6 +154,7 @@ export function wishList(ctx) {
         h('ul', { class: 'wish-ul' }, bought.map(row))) : null,
       candidates.length ? h('button', { class: 'link-btn', style: { marginTop: '10px' }, onClick: () => openMoveSheet(ctx, candidates, refresh) },
         `本棚の「持っていない」から移す（${candidates.length}冊）`) : null);
+    fillCovers(open);
   }
   refresh();
   return { el, refresh };

@@ -57,3 +57,15 @@ test('wishes travel with the backup', async () => {
   assert.deepEqual((await other.allWishes()).map(w => w.title), ['気になる本']);
   assert.equal(validateBackup({ ...backup, wishes: [{ id: 1 }] }).ok, false);
 });
+
+test('a wish with an ISBN is looked up for a cover once; covers come over from the shelf', async () => {
+  const { needsCover } = await import('../src/core/wish.js');
+  assert.equal(needsCover(newWish({ isbn: '9784063842760' })), true);
+  assert.equal(needsCover(newWish({ title: '書名だけ' })), false);
+  assert.equal(needsCover(newWish({ isbn: '9784063842760', coverCheckedAt: '2026-11-01' }), '2026-11-20'), false);
+  assert.equal(needsCover(newWish({ isbn: '9784063842760', coverCheckedAt: '2026-11-01' }), '2026-12-01'), true); // not found 30 days ago: ask again
+  assert.equal(needsCover(newWish({ isbn: '9784063842760', coverUrl: 'https://x/y.jpg' })), false);
+  assert.equal(needsCover(newWish({ isbn: '9784063842760', boughtAt: '2026-11-01' })), false);
+  assert.equal(needsCover({ isbn: '9784063842760', boughtAt: '' }), true); // saved before the fields existed
+  assert.equal(wishFromBook(newBook({ coverUrl: 'https://x/c.jpg' }), 'x').coverUrl, 'https://x/c.jpg');
+});
