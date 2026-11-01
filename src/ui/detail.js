@@ -11,6 +11,7 @@ import { icon } from './icons.js';
 import { pickPhoto } from './photo.js';
 import { withSections, wrapLink } from '../core/memo.js';
 import { classify } from '../core/ndc.js';
+import { connectedBooks } from '../core/links.js';
 
 const OWNERSHIP_OPTIONS = Object.entries(LABELS.ownership);
 const READ_OPTIONS = Object.entries(LABELS.read);
@@ -153,7 +154,22 @@ export async function openDetail(bookId, ctx) {
     fitMemo();
     memo.focus({ preventScroll: true });
     memo.setSelectionRange(cursor, cursor);
+    renderLinks();
   }
+  // つながる本: other books whose memos share a [[ ]] word. Redrawn when the memo is left or a word is wrapped.
+  const links = h('div', { class: 'links' });
+  async function renderLinks() {
+    const groups = connectedBooks({ ...book, memo: memo.value }, await db.allBooks());
+    if (!groups.length) { fill(links); return; }
+    fill(links,
+      h('div', { class: 'section-title' }, 'つながる本'),
+      ...groups.map(({ word, books }) => h('div', { class: 'link-group' },
+        h('span', { class: 'link-word' }, `[[${word}]]`),
+        books.length
+          ? h('div', { class: 'chips link-books' }, ...books.map(b => h('button', { class: 'chip link-book', onClick: () => ctx.openDetail(b.id) }, displayTitle(b))))
+          : h('span', { class: 'small muted' }, 'ほかの本にはまだありません'))));
+  }
+  memo.addEventListener('blur', renderLinks);
   s.onClose(saveMemo);
 
   // Yomoo-style line: reading state on the left, the day it was registered on the right (鬼さん 2026-10-24: 読んだ日→登録した日).
@@ -320,6 +336,7 @@ export async function openDetail(bookId, ctx) {
     renderHead();
     renderTags();
     renderDates();
+    renderLinks();
     fill(content,
       head,
       h('div', { class: 'tag-line' }, icon('tag'), tagRow),
@@ -328,6 +345,7 @@ export async function openDetail(bookId, ctx) {
       h('div', { class: 'memo-tools' },
         h('button', { class: 'link-btn', onClick: addSections }, '問いで書く（学び・体験・疑問など7つの見出しを入れる）'),
         h('button', { class: 'link-btn', onPointerdown: e => e.preventDefault(), onClick: addLink }, 'つなぐ言葉を [[ ]] で囲む')),
+      links,
       stateLine,
       h('div', { class: 'section-title' }, '持っているか'),
       segmented(OWNERSHIP_OPTIONS, book.ownership, async v => {

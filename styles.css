@@ -474,3 +474,9 @@ html, body { overflow-x: clip; max-width: 100%; }
 .book-list > li, .book-row, .meta { min-width: 0; max-width: 100%; }
 .meta .title, .meta .sub, .cover-name { overflow-wrap: anywhere; }
 .tabbar { width: 100%; max-width: 100vw; }
+
+/* つながる本 (book detail, under the memo) */
+.links .section-title { margin-top: 16px; }
+.link-group { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 12px; }
+.link-word { font-size: 13px; font-weight: 700; color: var(--accent-ink); }
+.link-book { max-width: 100%; text-align: left; white-space: normal; }
