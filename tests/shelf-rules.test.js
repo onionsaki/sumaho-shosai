@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { filterBooks, sortBooks } from '../src/core/search.js';
 import { isStale, defaultStaleRules } from '../src/core/stale.js';
-import { ownedPriceSum, countOwned, tsundokuRate, floorTatami, ownedWithoutPrice } from '../src/core/stats.js';
+import { ownedPriceSum, countOwned, tsundokuRate, floorTatami, ownedWithoutPrice, tsundokuVsRead } from '../src/core/stats.js';
 import { newBook } from '../src/core/model.js';
 
 const EXAM = [{ tagId: 'exam', years: 2 }];
@@ -138,4 +138,20 @@ test('issued sorts put newer or older release first and unknown dates last', () 
   const none = newBook({ title: 'c', issued: '' });
   assert.deepEqual(sortBooks([a, none, b], 'issuedNew'), [b, a, none]);
   assert.deepEqual(sortBooks([b, none, a], 'issuedOld'), [a, b, none]);
+});
+
+test('積読 and 読了 are summed in money and pages, counting books whose figure is unknown', () => {
+  const b = (o) => ({ ownership: 'owned', format: 'paper', tagIds: [], readStatus: 'unread', price: null, pages: null, ...o });
+  const books = [
+    b({ tagIds: ['t'], price: 1500, pages: 300 }),
+    b({ tagIds: ['t'], price: null, pages: 200 }),
+    b({ readStatus: 'read', price: 1000, pages: 250 }),
+    b({ readStatus: 'read', price: 800, pages: null, format: 'ebook' }),
+    b({ readStatus: 'read', ownership: 'released', price: 9999, pages: 999 }),
+  ];
+  assert.deepEqual(tsundokuVsRead(books, 't'), {
+    tsundoku: { count: 2, price: 1500, pages: 500, noPrice: 1, noPages: 0 },
+    read: { count: 2, price: 1800, pages: 250, noPrice: 0, noPages: 1 },
+  });
+  assert.equal(tsundokuVsRead(books, ''), null);
 });

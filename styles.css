@@ -480,3 +480,18 @@ html, body { overflow-x: clip; max-width: 100%; }
 .link-group { display: flex; flex-direction: column; gap: 6px; margin: 8px 0 12px; }
 .link-word { font-size: 13px; font-weight: 700; color: var(--accent-ink); }
 .link-book { max-width: 100%; text-align: left; white-space: normal; }
+
+/* 積読と読了 (蔵書のすがた) */
+.bar-group { margin: 8px 0 4px; display: flex; flex-direction: column; gap: 4px; }
+.bar-row { display: grid; grid-template-columns: 2.6em 1fr auto; align-items: center; gap: 8px; font-size: 13px; }
+.bar-track { height: 10px; border-radius: 999px; background: var(--bg); box-shadow: var(--pressed); overflow: hidden; }
+.bar-fill { display: block; height: 100%; border-radius: 999px; min-width: 2px; }
+.bar-fill.debt { background: var(--muted); }
+.bar-fill.asset { background: var(--accent); }
+.bar-value { font-variant-numeric: tabular-nums; min-width: 5.5em; text-align: right; }
+
+/* 新しい版 (book detail) */
+.edition-box { margin-top: 8px; }
+.edition-found { margin-top: 12px; padding: 12px 14px; border-radius: 12px; background: var(--card); box-shadow: var(--raise-sm); font-size: 14px; display: flex; flex-direction: column; gap: 4px; }
+.edition-head { font-weight: 700; color: var(--accent-ink); }
+.link-book-row { border: 0; background: transparent; text-align: left; width: 100%; padding: 8px 0; color: var(--ink); cursor: pointer; }

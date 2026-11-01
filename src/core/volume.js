@@ -18,6 +18,7 @@ function kanjiToNumber(s) {
 export function parseVolume(label) {
   const s = String(label ?? '').normalize('NFKC').trim();
   if (!s) return null;
+  if (/版$/.test(s)) return null; // 「2024年度版」「第3版」 are editions, not volumes (2026-11-01)
   const position = s.match(/^第?([上中下])巻?$/);
   if (position) return { '上': 1, '中': 2, '下': 3 }[position[1]];
   const digits = s.match(/\d+/);

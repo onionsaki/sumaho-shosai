@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { DOMParser } from '@xmldom/xmldom';
 import {
-  parseNdlOpenSearch, pickBestNdlItem, ndlIsbnUrl, ndlTitleSearchUrl, ndlThumbnailUrl,
+  parseNdlOpenSearch, pickBestNdlItem, ndlIsbnUrl, ndlTitleSearchUrl, ndlThumbnailUrl, parsePages,
 } from '../src/core/ndl.js';
 
 const read = name => readFileSync(new URL(`./fixtures/${name}`, import.meta.url), 'utf8');
@@ -62,4 +62,11 @@ test('urls', () => {
   );
   assert.equal(ndlTitleSearchUrl('x'), 'https://ndlsearch.ndl.go.jp/api/opensearch?title=x&cnt=20');
   assert.equal(ndlThumbnailUrl('9784763135476'), 'https://ndlsearch.ndl.go.jp/thumbnail/9784763135476.jpg');
+});
+
+test('pages written in two parts are added up', () => {
+  assert.equal(parsePages('254p ; 19cm'), 254);
+  assert.equal(parsePages('489,124p'), 613);
+  assert.equal(parsePages('276, 89p ; 21cm'), 365);
+  assert.equal(parsePages('1冊'), null);
 });

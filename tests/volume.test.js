@@ -27,3 +27,9 @@ test('workKeyOf ignores width, spacing and roles', () => {
   assert.notEqual(workKeyOf('ONE PIECE', ['尾田栄一郎']), workKeyOf('ONE PIECE', ['別の人']));
   assert.equal(workKeyOf('作品', []), '作品|');
 });
+
+test('an edition in the volume field is not a volume', () => {
+  assert.equal(parseVolume('2024年度版'), null);
+  assert.equal(parseVolume('第3版'), null);
+  assert.equal(parseVolume('巻一'), 1);
+});

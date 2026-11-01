@@ -28,3 +28,18 @@ export const floorTatami = books => (ownedPaper(books).length * BOOK_AREA_M2) / 
 export const SHELF_ROOM = [
   ['plenty', '余裕'], ['some', '空きあり'], ['full', '丁度'], ['short', '本棚不足'], ['floor', '床に敷ける'],
 ];
+
+// 積読と読了 (bar chart in 蔵書のすがた, 鬼さん 2026-11-01: 積読は負債、読めば資産). 積読 = owned books with the 積読
+// tag (the same tag as 積読率), 読了 = owned books marked 読了; e-books count too. null when no 積読 tag is chosen.
+export function tsundokuVsRead(books, tagId) {
+  if (!tagId) return null;
+  const sum = list => ({
+    count: list.length,
+    price: list.reduce((s, b) => s + (typeof b.price === 'number' ? b.price : 0), 0),
+    pages: list.reduce((s, b) => s + (typeof b.pages === 'number' ? b.pages : 0), 0),
+    noPrice: list.filter(b => typeof b.price !== 'number').length,
+    noPages: list.filter(b => typeof b.pages !== 'number').length,
+  });
+  const owned = books.filter(b => b.ownership === 'owned');
+  return { tsundoku: sum(owned.filter(b => b.tagIds.includes(tagId))), read: sum(owned.filter(b => b.readStatus === 'read')) };
+}

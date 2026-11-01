@@ -3,7 +3,9 @@
 import { h, fill, toast, confirmDialog, saveFile, savedMessage, formatDate, sheet, segmented } from './dom.js';
 import { booksToCsv, csvFileName, parseCsv, rowsToBooks } from '../core/csv.js';
 import { makeBackup, validateBackup, backupFileName, restoredSettings } from '../core/backup.js';
-import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami, SHELF_ROOM } from '../core/stats.js';
+import { ownedPriceSum, countOwned, tsundokuRate, ownedWithoutPrice, floorTatami, SHELF_ROOM, tsundokuVsRead } from '../core/stats.js';
+import { checkNewerEdition, newerEditionText } from './detail.js';
+import { seriesVolume } from '../core/editions.js';
 import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
 import { isStale } from '../core/stale.js';
@@ -145,6 +147,44 @@ export function mount(container, ctx) {
       note ? h('div', { class: 'muted small stat-note' }, note) : null);
     const staleCount = books.filter(b => isStale(b, staleRules, todayStr())).length;
     const paperCount = books.filter(b => b.ownership === 'owned' && b.format !== 'ebook').length;
+    // 積読と読了: two small bars each for money and pages (積読は負債、読めば資産).
+    const tr = tsundokuVsRead(books, tsundokuTagId);
+    const bars = (label, key, unit, unknownKey) => {
+      const max = Math.max(tr.tsundoku[key], tr.read[key], 1);
+      const row = (name, v, cls) => h('div', { class: 'bar-row' },
+        h('span', { class: 'bar-name' }, name),
+        h('span', { class: 'bar-track' }, h('span', { class: `bar-fill ${cls}`, style: { width: `${Math.round((v[key] / max) * 100)}%` } })),
+        h('span', { class: 'bar-value' }, `${v[key].toLocaleString()}${unit}`));
+      const unknown = tr.tsundoku[unknownKey] + tr.read[unknownKey];
+      return h('div', { class: 'bar-group' },
+        h('div', { class: 'small muted' }, label),
+        row('積読', tr.tsundoku, 'debt'), row('読了', tr.read, 'asset'),
+        unknown ? h('div', { class: 'small muted' }, `分からない本が${unknown.toLocaleString()}冊あります`) : null);
+    };
+    const barBlock = tr ? h('div', { class: 'stat-block' },
+      h('div', { class: 'stat' }, h('span', {}, '積読と読了'), h('span', { class: 'muted small' }, `積読 ${tr.tsundoku.count}冊・読了 ${tr.read.count}冊`)),
+      bars('定価（税抜）', 'price', '円', 'noPrice'), bars('ページ', 'pages', 'p', 'noPages')) : null;
+
+    // 新しい版をまとめて確かめる: every 古いかも book, one by one (NDL is asked one at a time anyway).
+    const staleBooks = books.filter(b => isStale(b, staleRules, todayStr()) && seriesVolume(b) === null);
+    const withNewer = books.filter(b => b.newerEdition);
+    async function checkAllEditions(btn) {
+      btn.disabled = true;
+      let found = 0;
+      for (const [i, b] of staleBooks.entries()) {
+        btn.textContent = `確かめています… ${i + 1}/${staleBooks.length}冊`;
+        try { if ((await checkNewerEdition(b, ctx)).newerEdition) found++; } catch { /* next book */ }
+      }
+      toast(`新しい版が出ている本：${found}冊`);
+      render();
+    }
+    function showNewer() {
+      sheet(h('ul', { class: 'check-list' }, withNewer.map(b => h('li', {},
+        h('button', { class: 'link-book-row', onClick: () => ctx.openDetail(b.id) },
+          h('div', { class: 'title' }, b.title), h('div', { class: 'small muted' }, `新しい版：${newerEditionText(b)}`))))),
+      { title: '新しい版が出ている本', thumbClose: true });
+    }
+
     const sugata = h('div', { class: 'card' },
       statRow('持っている本', `${countOwned(books).toLocaleString()}冊`,
         `紙 ${paperCount.toLocaleString()}冊・電子 ${(countOwned(books) - paperCount).toLocaleString()}冊`),
@@ -154,9 +194,14 @@ export function mount(container, ctx) {
         `持っている本の定価（税抜）の合計${noPrice ? `。定価の分からない本が${noPrice.toLocaleString()}冊あるので、実際はもう少し多めです` : ''}`),
       statRow('床に並べると', tatami < 0.1 ? '畳 0.1枚分未満' : `畳 ${tatami < 10 ? tatami.toFixed(1) : Math.round(tatami)}枚分`,
         '紙の本を表紙を上にして床に並べた広さ。1冊を四六判（12.8×18.8cm）として数えた、だいたいの目安です'),
+      barBlock,
       statRow('古いかもしれない本', `${staleCount.toLocaleString()}冊`,
-        staleCount ? h('button', { class: 'link-btn', onClick: () => { location.hash = 'shelf?stale=1'; } }, '本棚で見る')
+        staleCount ? h('div', { class: 'memo-tools' },
+          h('button', { class: 'link-btn', onClick: () => { location.hash = 'shelf?stale=1'; } }, '本棚で見る'),
+          staleBooks.length ? h('button', { class: 'link-btn', onClick: e => checkAllEditions(e.currentTarget) }, `新しい版が出ていないか、まとめて確かめる（${staleBooks.length}冊・1冊数秒）`) : null)
           : '法律・試験用・参考書などで、発行から年数のたった本はありません'),
+      withNewer.length ? statRow('新しい版が出ている本', `${withNewer.length.toLocaleString()}冊`,
+        h('button', { class: 'link-btn', onClick: showNewer }, '一覧を見る')) : null,
       h('div', { class: 'stat-block' },
         h('div', { class: 'stat' }, h('span', {}, '本棚の空き'), h('span', { class: 'muted small' }, '自分で選ぶ')),
         segmented(SHELF_ROOM, shelfRoom ?? '', v => db.setSetting('shelfRoom', v))));

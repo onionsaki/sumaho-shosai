@@ -12,10 +12,31 @@ import { pickPhoto } from './photo.js';
 import { withSections, wrapLink } from '../core/memo.js';
 import { classify } from '../core/ndc.js';
 import { connectedBooks } from '../core/links.js';
+import { seriesVolume } from '../core/editions.js';
+import { newWish, openWishesFor } from '../core/wish.js';
 
 const OWNERSHIP_OPTIONS = Object.entries(LABELS.ownership);
 const READ_OPTIONS = Object.entries(LABELS.read);
 const FORMAT_OPTIONS = Object.entries(LABELS.format);
+
+const yearMonth = ym => (/^\d{4}-\d{2}$/.test(ym ?? '') ? `${ym.slice(0, 4)}年${Number(ym.slice(5))}月` : ym || '発行年不明');
+
+// 新しい版を確かめる: asks NDL and keeps the newest other edition (or null) on the book with the day it was checked.
+// Used from the book detail and from 設定 (all 古いかも books at once).
+export async function checkNewerEdition(book, { db, lookup }) {
+  const list = await lookup.searchNewerEditions(book);
+  const n = list[0];
+  const newerEdition = n ? { isbn: n.isbn, title: n.title, issued: n.issued, edition: n.edition || (/版/.test(n.volumeLabel ?? '') ? n.volumeLabel : ''), pages: n.pages ?? null, publisher: n.publisher ?? '' } : null;
+  const latest = (await db.getBook(book.id)) ?? book;
+  return db.putBook({ ...latest, newerEdition, editionCheckedAt: todayStr() });
+}
+
+export function newerEditionText(book) {
+  const n = book.newerEdition;
+  if (!n) return '';
+  const pages = n.pages && book.pages ? `${n.pages}ページ（この本は${book.pages}ページ）` : n.pages ? `${n.pages}ページ` : '';
+  return [`${yearMonth(n.issued)}${n.edition ? `・${n.edition}` : ''}`, pages].filter(Boolean).join('　');
+}
 
 export async function openDetail(bookId, ctx) {
   const { db, lookup } = ctx;
@@ -170,6 +191,39 @@ export async function openDetail(bookId, ctx) {
           : h('span', { class: 'small muted' }, 'ほかの本にはまだありません'))));
   }
   memo.addEventListener('blur', renderLinks);
+  // 新しい版: what was found the last time it was checked, and the button to check (again).
+  const edition = h('div', { class: 'edition-box' });
+  const canCheckEdition = () => book.title && seriesVolume(book) === null && !isMagazineCode(book.isbn ?? '');
+  function renderEdition(status = '') {
+    if (!canCheckEdition()) { fill(edition); return; }
+    const n = book.newerEdition;
+    fill(edition,
+      n ? h('div', { class: 'edition-found' },
+        h('div', { class: 'edition-head' }, '新しい版が出ています'),
+        h('div', {}, newerEditionText(book)),
+        n.title !== book.title ? h('div', { class: 'small muted' }, n.title) : null,
+        h('button', { class: 'link-btn', onClick: addEditionWish }, '欲しい本に入れる'))
+        : book.editionCheckedAt ? h('p', { class: 'small muted' }, `新しい版は見つかりませんでした（${formatDate(book.editionCheckedAt)}に確認）`) : null,
+      h('button', { class: 'btn wide', style: { marginTop: '8px' }, onClick: checkEdition }, '新しい版を確かめる'),
+      status ? h('p', { class: 'small muted' }, status) : null);
+  }
+  async function checkEdition() {
+    renderEdition('国立国会図書館で同じ書名の本を探しています…');
+    try {
+      book = await checkNewerEdition(book, ctx);
+      changed = true;
+      renderEdition();
+    } catch (err) {
+      renderEdition(err.message === 'offline' ? '電波がないため確かめられません。電波のある場所でもう一度押してください。' : 'うまく探せませんでした。少し時間をおいてもう一度押してください。');
+    }
+  }
+  async function addEditionWish() {
+    const n = book.newerEdition;
+    if (openWishesFor(await db.allWishes(), n.isbn).length) { toast('欲しい本にもう入っています'); return; }
+    await db.putWish(newWish({ isbn: n.isbn, title: n.title, author: (book.authors ?? []).join('、'),
+      expect: `新しい版（持っているのは${yearMonth(book.issued)}の版）` }));
+    toast('欲しい本に入れました');
+  }
   s.onClose(saveMemo);
 
   // Yomoo-style line: reading state on the left, the day it was registered on the right (鬼さん 2026-10-24: 読んだ日→登録した日).
@@ -337,6 +391,7 @@ export async function openDetail(bookId, ctx) {
     renderTags();
     renderDates();
     renderLinks();
+    renderEdition();
     fill(content,
       head,
       h('div', { class: 'tag-line' }, icon('tag'), tagRow),
@@ -364,6 +419,7 @@ export async function openDetail(bookId, ctx) {
       book.lookup === 'manual' ? h('button', { class: 'btn wide', style: { marginTop: '8px' }, onClick: addNextVolume }, 'この作品の次の巻を追加') : null,
       book.volume !== null && book.volume !== undefined && book.workKey && !isMagazineCode(book.isbn ?? '')
         ? h('button', { class: 'btn wide', style: { marginTop: '8px' }, onClick: findSeries }, 'この作品の既刊を探す') : null,
+      edition,
       h('button', { class: 'btn danger wide', style: { marginTop: '16px' }, onClick: async () => {
         if (!(await confirmDialog(`「${displayTitle(book)}」を削除します。元に戻せません。`, '削除する'))) return;
         await db.deleteBook(book.id);

@@ -31,6 +31,9 @@ export function ndlSeriesSearchUrl({ title, author = '', publisher = '' }) {
   return `${BASE}?${parts.join('&')}`;
 }
 
+// Every edition of one title (新しい版を確かめる). Title only: newer records sometimes name the authors differently.
+export const ndlEditionSearchUrl = title => `${BASE}?title=${encodeURIComponent(title)}&mediatype=books&cnt=200`;
+
 export const ndlThumbnailUrl = isbn => `https://ndlsearch.ndl.go.jp/thumbnail/${isbn}.jpg`;
 
 const all = (el, ns, name) => Array.from(el.getElementsByTagNameNS(NS[ns], name));
@@ -43,9 +46,13 @@ export function parseIssued(raw) {
   return m[2] ? `${m[1]}-${m[2].padStart(2, '0')}` : m[1];
 }
 
-const parsePages = raw => {
-  const m = nfkc(raw).match(/(\d+)\s*p/i);
-  return m ? Number(m[1]) : null;
+// 「254p」 → 254. 「489,124p」 is the main part and a second part (別冊) counted apart: summed (2026-11-01;
+// only the last number was read before, so such books showed 124 pages).
+export const parsePages = raw => {
+  const m = nfkc(raw).match(/^[^;]*?([\d,\s]+)\s*p/i);
+  if (!m) return null;
+  const nums = m[1].split(',').map(x => Number(x.trim())).filter(n => n > 0);
+  return nums.length ? nums.reduce((a, b) => a + b, 0) : null;
 };
 
 const parsePrice = raw => {
@@ -81,6 +88,7 @@ function parseItem(item) {
     authors: all(item, 'dc', 'creator').map(e => cleanNdlName(e.textContent)).filter(Boolean),
     authorsKana: all(item, 'dcndl', 'creatorTranscription').map(e => cleanNdlName(e.textContent)).filter(Boolean),
     publisher: first(item, 'dc', 'publisher'),
+    edition: nfkc(first(item, 'dcndl', 'edition')),
     issued: parseIssued(first(item, 'dcterms', 'issued')),
     pages: parsePages(first(item, 'dc', 'extent')),
     price: parsePrice(first(item, 'dcndl', 'price')),
