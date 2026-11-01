@@ -139,7 +139,7 @@ export async function openDetail(bookId, ctx) {
     sheet(h('div', {}, input, listEl), { title: 'タグ' });
   }
 
-  const memo = h('textarea', { placeholder: 'メモ（なぜ買ったか、活かせるところ、感想など）', value: book.memo });
+  const memo = h('textarea', { placeholder: 'この本から持ち帰る視点を、ひとつだけ。一行で十分です', value: book.memo });
   let memoTimer = null;
   const saveMemo = () => { clearTimeout(memoTimer); if (memo.value !== book.memo) save({ memo: memo.value }); };
   memo.addEventListener('input', () => { clearTimeout(memoTimer); memoTimer = setTimeout(saveMemo, 500); });
@@ -398,8 +398,8 @@ export async function openDetail(bookId, ctx) {
       h('div', { style: { height: '18px' } }),
       memo,
       h('div', { class: 'memo-tools' },
-        h('button', { class: 'link-btn', onClick: addSections }, '問いで書く（学び・体験・疑問など7つの見出しを入れる）'),
-        h('button', { class: 'link-btn', onPointerdown: e => e.preventDefault(), onClick: addLink }, 'つなぐ言葉を [[ ]] で囲む')),
+        h('button', { class: 'link-btn', onClick: addSections }, '問いで書く'),
+        h('button', { class: 'link-btn', onPointerdown: e => e.preventDefault(), onClick: addLink }, '[[ ]]でつなぐ')),
       links,
       stateLine,
       h('div', { class: 'section-title' }, '持っているか'),
