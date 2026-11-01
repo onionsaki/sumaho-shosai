@@ -5,7 +5,7 @@ const VERSION = 1;
 const DAY = 86400000;
 
 // The Rakuten keys stay on the phone (鬼さん 2026-10-31): they never go into a backup file on Google Drive.
-export const PHONE_ONLY_SETTINGS = ['rakutenAppId', 'rakutenAccessKey'];
+export const PHONE_ONLY_SETTINGS = ['rakutenAppId', 'rakutenAccessKey', 'googleBooksKey'];
 const isPhoneOnly = row => PHONE_ONLY_SETTINGS.includes(row?.key);
 
 export function makeBackup({ books, tags, settings, photos = [], wishes = [] }, nowIso) {

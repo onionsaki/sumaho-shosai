@@ -30,9 +30,9 @@ export function mount(container, ctx) {
 
   async function render() {
     const staleRules = await db.staleRules(); // first, since it may add the 法律・参照資料 tag
-    const [books, tags, examTagId, staleYears, lastBackupAt, theme, rakutenAppId, rakutenAccessKey] = await Promise.all([
+    const [books, tags, examTagId, staleYears, lastBackupAt, theme, rakutenAppId, rakutenAccessKey, googleBooksKey] = await Promise.all([
       db.allBooks(), db.allTags(), db.getSetting('examTagId'), db.getSetting('staleYears'), db.getSetting('lastBackupAt'),
-      db.getSetting('theme'), db.getSetting('rakutenAppId'), db.getSetting('rakutenAccessKey'),
+      db.getSetting('theme'), db.getSetting('rakutenAppId'), db.getSetting('rakutenAccessKey'), db.getSetting('googleBooksKey'),
     ]);
     const sectionOrder = await db.getSetting('settingsOrder');
     let persisted = null;
@@ -170,9 +170,10 @@ export function mount(container, ctx) {
     // --- Rakuten covers (keys stay on this phone) ---
     const appIdInput = h('input', { type: 'text', value: rakutenAppId ?? '', autocomplete: 'off', spellcheck: false });
     const keyInput = h('input', { type: 'text', value: rakutenAccessKey ?? '', autocomplete: 'off', spellcheck: false });
+    const googleInput = h('input', { type: 'text', value: googleBooksKey ?? '', autocomplete: 'off', spellcheck: false });
     const noCover = books.filter(b => b.isbn && !b.coverUrl);
     let filling = false;
-    const fillBtn = h('button', { class: 'btn wide', style: { marginTop: '10px' }, disabled: !(rakutenAppId && rakutenAccessKey) || !noCover.length, onClick: async () => {
+    const fillBtn = h('button', { class: 'btn wide', style: { marginTop: '10px' }, disabled: !((rakutenAppId && rakutenAccessKey) || googleBooksKey) || !noCover.length, onClick: async () => {
       if (filling) return;
       filling = true;
       let added = 0;
@@ -250,6 +251,15 @@ export function mount(container, ctx) {
           render();
         } }, '保存する'),
         fillBtn))],
+      google: ['本の表紙（Google Books）', () => titled('本の表紙（Google Books）', h('div', { class: 'card' },
+        h('p', { class: 'muted small', style: { marginTop: 0 } }, 'Google Cloud で作った Books API のキーを入れると、openBD と楽天で表紙が見つからない本を Google Books から探します。キーはこのスマホの中だけに保存し、バックアップにも入れません。'),
+        h('label', { class: 'field' }, h('span', {}, 'APIキー'), googleInput),
+        h('button', { class: 'btn primary wide', onClick: async () => {
+          await db.setSetting('googleBooksKey', googleInput.value.trim());
+          toast(googleInput.value.trim() ? '保存しました。表紙が見つからない本は Google Books からも探します' : 'Google Books を使わない設定にしました');
+          render();
+        } }, '保存する'),
+        h('p', { class: 'muted small' }, '「表紙のない本に表紙を付ける」は、楽天の欄のボタンから。楽天→Google Books の順に探します。')))],
       stale: ['古いかもの判定', () => titled('古いかもの判定', h('div', { class: 'card' },
         h('p', { class: 'muted small', style: { marginTop: 0 } }, 'このタグの本は、発行からこの年数がたったら「古いかも」と出します'),
         ruleRows.length ? ruleRows : h('p', { class: 'small' }, '（使っていません）'),
@@ -296,7 +306,7 @@ export function mount(container, ctx) {
 
       h('button', { class: 'btn wide', style: { marginTop: '10px' }, onClick: openAbout }, 'このアプリについて（プライバシーポリシー・免責・クレジット）'),
       h('p', { class: 'muted small', style: { marginTop: '16px' } },
-        '本の情報は、国立国会図書館サーチのAPIと openBD を利用して取得しています。', rakutenAppId ? h('span', {}, ' 表紙の一部は楽天ブックスから取得しています：', rakutenCredit()) : ''),
+        '本の情報は、国立国会図書館サーチのAPIと openBD を利用して取得しています。', rakutenAppId ? h('span', {}, ' 表紙の一部は楽天ブックスから取得しています：', rakutenCredit()) : '', googleBooksKey ? ' 表紙の一部は Google Books から取得しています。' : ''),
     );
   }
 

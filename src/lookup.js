@@ -5,6 +5,7 @@ import { ndlIsbnUrl, ndlTitleSearchUrl, ndlSeriesSearchUrl, ndlEditionSearchUrl,
 import { editionFreeTitle, newerEditions } from './core/editions.js';
 import { openBdUrl, parseOpenBd } from './core/openbd.js';
 import { mergeBookInfo } from './core/merge.js';
+import { googleBooksIsbnUrl, parseGoogleCover } from './core/googlebooks.js';
 import { rakutenIsbnUrl, parseRakutenCover, rakutenMagazineUrl, parseRakutenMagazine } from './core/rakuten.js';
 import { isMagazineCode, parseMagazineCode, magazineTitle, magazineBase, magazineKey } from './core/isbn.js';
 import { newBook } from './core/model.js';
@@ -25,6 +26,7 @@ export function createLookupQueue({
   now = () => Date.now(),
   isOnline = () => navigator.onLine,
   getRakutenKeys = async () => null, // {appId, accessKey} once 鬼さん has registered
+  getGoogleKey = async () => '', // the user's own Google Books API key, if any
 }) {
   const queue = [];
   const queued = new Map(); // id -> overwrite flag
@@ -110,6 +112,20 @@ export function createLookupQueue({
     }
   }
 
+  async function googleCover(isbn) {
+    const key = await getGoogleKey();
+    if (!key) return '';
+    try {
+      const res = await fetchText(googleBooksIsbnUrl(isbn, key));
+      return res.status === 200 ? parseGoogleCover(JSON.parse(res.text)) : '';
+    } catch {
+      return '';
+    }
+  }
+
+  // After openBD: Rakuten, then Google Books (鬼さん 2026-11-01), each only when its key is set.
+  const keyedCover = async isbn => (await rakutenCover(isbn)) || googleCover(isbn);
+
   // Returns magazine info, null when Rakuten has none, or undefined when it cannot be asked (no keys or no network).
   async function magazineInfo(code) {
     const keys = await getRakutenKeys();
@@ -178,7 +194,7 @@ export function createLookupQueue({
     const latest = await db.getBook(id); // keep edits made while waiting
     if (!latest) return;
     const merged = mergeBookInfo(latest, result.ndl, result.openbd, { overwrite });
-    if (!merged.coverUrl && merged.lookup === 'ok') merged.coverUrl = await rakutenCover(book.isbn);
+    if (!merged.coverUrl && merged.lookup === 'ok') merged.coverUrl = await keyedCover(book.isbn);
     const saved = await db.putBook(merged);
     for (const cb of listeners) cb(saved);
   }
@@ -227,7 +243,7 @@ export function createLookupQueue({
         const { ndl, openbd } = await lookupIsbn(isbn);
         const merged = mergeBookInfo(newBook({ isbn }), ndl, openbd);
         if (merged.lookup !== 'ok') return null;
-        if (!merged.coverUrl) merged.coverUrl = await rakutenCover(isbn);
+        if (!merged.coverUrl) merged.coverUrl = await keyedCover(isbn);
         return merged;
       } catch {
         return null;
@@ -273,7 +289,7 @@ export function createLookupQueue({
     async fillCover(id) {
       const book = await db.getBook(id);
       if (!book?.isbn || book.coverUrl || !isOnline()) return false;
-      const url = await rakutenCover(book.isbn);
+      const url = await keyedCover(book.isbn);
       if (!url) return false;
       const latest = await db.getBook(id);
       if (!latest || latest.coverUrl) return false;

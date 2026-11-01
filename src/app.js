@@ -44,6 +44,7 @@ async function boot() {
       const accessKey = await db.getSetting('rakutenAccessKey');
       return appId && accessKey ? { appId, accessKey } : null;
     },
+    getGoogleKey: async () => (await db.getSetting('googleBooksKey')) || '',
   });
 
   const ctx = {
