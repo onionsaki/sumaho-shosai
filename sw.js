@@ -1,7 +1,7 @@
 // Service worker: cache-first app shell so the app opens without a signal (spec §7).
 // Bump VERSION and keep APP_FILES complete whenever a loaded file is added or changed.
 
-const VERSION = '41';
+const VERSION = '42';
 const CACHE = `sumaho-shosai-v${VERSION}`;
 // The photo reader (vendor/tesseract/, ~7MB) is kept apart: loaded on first use, then kept across versions.
 const OCR_CACHE = 'sumaho-shosai-ocr-5.1.1';

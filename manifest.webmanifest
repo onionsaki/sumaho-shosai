@@ -34,5 +34,19 @@
       "type": "image/png",
       "purpose": "maskable"
     }
+  ],
+  "shortcuts": [
+    {
+      "name": "本屋で確認する",
+      "short_name": "確認（本屋）",
+      "url": "./#scan?mode=check",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    },
+    {
+      "name": "片付けで登録する",
+      "short_name": "登録（片付け）",
+      "url": "./#scan?mode=register",
+      "icons": [{ "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" }]
+    }
   ]
 }

@@ -332,7 +332,9 @@ export function mount(container, ctx) {
   container.append(modeSlot, h('div', { style: { height: '12px' } }), body);
   db.getSetting('lastScanMode').then(saved => {
     if (disposed) return;
-    const initial = saved === 'check' ? 'check' : 'register';
+    // Long-pressing the home-screen icon opens #scan?mode=check (本屋) or ?mode=register (manifest shortcuts).
+    const asked = new URLSearchParams(location.hash.split('?')[1] ?? '').get('mode');
+    const initial = asked === 'check' || asked === 'register' ? asked : saved === 'check' ? 'check' : 'register';
     modeSlot.append(segmented(MODES, initial, v => switchMode(v)));
     switchMode(initial);
   });
