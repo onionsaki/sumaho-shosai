@@ -43,6 +43,7 @@ export function newBook(partial = {}) {
     ownership: 'owned',
     readStatus: 'unread',
     tagIds: [], memo: '',
+    favorite: false, // お気に入りの星 (鬼さん 2026-11-02)
     createdAt: now, updatedAt: now,
     readAt: '', releasedAt: '',
     lookup: 'manual',

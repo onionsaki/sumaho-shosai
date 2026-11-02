@@ -24,7 +24,7 @@ const collator = new Intl.Collator('ja');
 
 export function filterBooks(books, filter = {}, ctx = {}) {
   const {
-    query = '', ownership = [], readStatus = [], tagIds = [], classCodes = [], staleOnly = false, needsReviewOnly = false,
+    query = '', ownership = [], readStatus = [], tagIds = [], classCodes = [], staleOnly = false, needsReviewOnly = false, favoriteOnly = false,
   } = filter;
   const terms = String(query).split(/[\s　]+/).map(normalizeForSearch).filter(Boolean);
   return books.filter(b => {
@@ -33,6 +33,7 @@ export function filterBooks(books, filter = {}, ctx = {}) {
     if (tagIds.length && !tagIds.every(t => b.tagIds.includes(t))) return false;
     if (classCodes.length && !classCodes.includes(classify(b.ndc)?.code)) return false; // any of the chosen 分類
     if (needsReviewOnly && b.lookup !== 'not_found') return false;
+    if (favoriteOnly && !b.favorite) return false;
     if (staleOnly && !isStale(b, ctx.staleRules, ctx.today)) return false;
     if (terms.length) {
       const text = haystack(b);

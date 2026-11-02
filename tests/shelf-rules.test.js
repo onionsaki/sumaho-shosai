@@ -155,3 +155,12 @@ test('積読 and 読了 are summed in money and pages, counting books whose figu
   });
   assert.equal(tsundokuVsRead(books, ''), null);
 });
+
+test('favoriteOnly keeps only starred books; older books without the field count as not starred', () => {
+  const fav = newBook({ title: 'a', favorite: true });
+  const plain = newBook({ title: 'b' });
+  const old = { ...newBook({ title: 'c' }) };
+  delete old.favorite;
+  assert.deepEqual(filterBooks([fav, plain, old], { favoriteOnly: true }, ctx), [fav]);
+  assert.equal(filterBooks([fav, plain, old], {}, ctx).length, 3);
+});

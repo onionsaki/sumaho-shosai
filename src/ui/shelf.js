@@ -17,7 +17,7 @@ const PAGE = 200;
 // Kept across tab switches during one visit. Opens on 持っている only (鬼さん 2026-10-25), so volumes added by
 // 「既刊を探す」 as 持っていない stay out of the way until that button is pressed.
 const state = {
-  query: '', ownership: ['owned'], readStatus: [], tagIds: [], classCodes: [], staleOnly: false, needsReviewOnly: false,
+  query: '', ownership: ['owned'], readStatus: [], tagIds: [], classCodes: [], staleOnly: false, needsReviewOnly: false, favoriteOnly: false,
   view: 'books', order: 'kana',
 };
 
@@ -92,6 +92,7 @@ export function mount(container, ctx) {
         .map(t => chip(t.name, () => { state.tagIds = state.tagIds.filter(x => x !== t.id); })),
       ...state.classCodes.map(code => chip(classCounts(books).find(c => c.code === code)?.name ?? code,
         () => { state.classCodes = state.classCodes.filter(x => x !== code); })),
+      state.favoriteOnly ? chip('★お気に入り', () => { state.favoriteOnly = false; }) : null,
       state.staleOnly ? chip('古いかも', () => { state.staleOnly = false; }) : null,
       state.needsReviewOnly ? chip('あとで確認', () => { state.needsReviewOnly = false; }) : null,
     ].filter(Boolean);
@@ -105,6 +106,7 @@ export function mount(container, ctx) {
     const draw = () => {
       const chip = (label, on, onClick) => h('button', { class: on ? 'chip on' : 'chip', onClick: () => { onClick(); render(); draw(); } }, label);
       const reviewCount = books.filter(b => b.lookup === 'not_found').length;
+      const favoriteCount = books.filter(b => b.favorite).length;
       const classes = classCounts(books.filter(b => !state.ownership.length || state.ownership.includes(b.ownership)));
       const tagNames = state.tagIds.map(id => tags.find(t => t.id === id)?.name).filter(Boolean);
       fill(body,
@@ -124,13 +126,14 @@ export function mount(container, ctx) {
           : h('p', { class: 'muted small' }, 'まだ分類の付いた本がありません。設定の「分類を付ける」で付けられます'),
         h('div', { class: 'section-title' }, 'その他'),
         h('div', { class: 'chips' },
+          chip(`★お気に入り ${favoriteCount}`, state.favoriteOnly, () => { state.favoriteOnly = !state.favoriteOnly; }),
           chip('古いかも', state.staleOnly, () => { state.staleOnly = !state.staleOnly; }),
           reviewCount ? chip(`あとで確認 ${reviewCount}`, state.needsReviewOnly, () => { state.needsReviewOnly = !state.needsReviewOnly; }) : null),
         h('div', { class: 'section-title' }, '表示'),
         segmented([['books', '1冊ずつ'], ['works', '作品でまとめる']], state.view, v => { state.view = v; render(); }),
         h('div', { class: 'row-buttons', style: { marginTop: '22px' } },
           h('button', { class: 'btn', onClick: () => {
-            Object.assign(state, { ownership: [], readStatus: [], tagIds: [], classCodes: [], staleOnly: false, needsReviewOnly: false });
+            Object.assign(state, { ownership: [], readStatus: [], tagIds: [], classCodes: [], staleOnly: false, needsReviewOnly: false, favoriteOnly: false });
             render(); draw();
           } }, '条件を外す'),
           h('button', { class: 'btn', onClick: async () => { const how = await saveFile(csvFileName(todayStr()), booksToCsv(currentBooks, tags), 'text/csv'); if (how !== 'cancelled') toast(savedMessage(how)); } }, 'この一覧をCSVに')),
@@ -164,7 +167,7 @@ export function mount(container, ctx) {
     const row = h('li', { class: 'book-row', onClick: () => { if (!row.dataset.swiped) ctx.openDetail(book.id); } },
       coverEl(book),
       h('div', { class: 'meta' },
-        h('div', { class: 'title' }, displayTitle(book)),
+        h('div', { class: 'title' }, book.favorite ? icon('star', 'fav-mark') : null, displayTitle(book)),
         h('div', { class: 'sub' }, (book.authors ?? []).join('、') || book.isbn || ''),
         badges.length ? h('div', { class: 'badges' }, badges) : null));
     if (book.ownership === 'not_owned') swipeToOwn(row, book);

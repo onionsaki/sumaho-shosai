@@ -543,3 +543,11 @@ html, body { overflow-x: clip; max-width: 100%; }
 .word-line { font-size: 13px; line-height: 1.6; margin: 4px 0 8px; }
 .word-book { border: 0; background: transparent; padding: 0; color: var(--muted); font-size: 12px; text-decoration: underline; cursor: pointer; }
 .graph-node.word { cursor: pointer; }
+
+/* お気に入りの星 (2026-11-02) */
+.detail-main { position: relative; flex: 1; min-width: 0; padding-right: 40px; }
+.fav-btn { position: absolute; top: -6px; right: -4px; width: 40px; height: 40px; border: 0; background: none; color: var(--muted); display: grid; place-items: center; }
+.fav-btn .icon { width: 24px; height: 24px; }
+.fav-btn.on, .fav-mark { color: #e0a100; }
+.fav-btn.on svg, .fav-mark svg { fill: currentColor; }
+.fav-mark { width: 14px; height: 14px; margin-right: 4px; vertical-align: -1px; }
