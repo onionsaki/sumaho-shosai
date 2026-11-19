@@ -35,7 +35,7 @@ async function mountTab(ctx) {
 async function boot() {
   const db = await openDb();
   try { await navigator.storage?.persist?.(); } catch { /* not critical */ }
-  applyTheme(await db.getSetting('theme'));
+  applyTheme(await db.getSetting('theme'), await db.getSetting('customTheme'));
   (await import('./ui/shelf.js')).setPhotoSource(id => db.getPhoto(id));
   const lookup = createLookupQueue({
     db,

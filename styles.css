@@ -1,5 +1,5 @@
 /* Soft, raised surfaces on a pale blue-grey ground (after Yomoo's look, 鬼さん 2026-10-24). */
-/* Colour patterns: 緑 (default), 白, 黒, 青, 濃い緑, 紺, 生成り. Switched in 設定 via html[data-theme]. */
+/* Colour patterns: 緑 (default), 白, 黒, 青, 濃い緑, 紺, 生成り, 自由. Switched in 設定 via html[data-theme]; 自由 sets its colours from src/ui/theme.js. */
 :root {
   --bg: #e3ebe6;
   --card: #e8efea;
@@ -551,3 +551,10 @@ html, body { overflow-x: clip; max-width: 100%; }
 .fav-btn.on, .fav-mark { color: #e0a100; }
 .fav-btn.on svg, .fav-mark svg { fill: currentColor; }
 .fav-mark { width: 14px; height: 14px; margin-right: 4px; vertical-align: -1px; }
+
+/* The free colour's sliders (鬼さん 2026-11-07). They sit under the swatches, full width. */
+.theme-sliders { grid-column: 1 / -1; display: grid; gap: 12px; padding: 14px; border-radius: 14px; background: var(--card); box-shadow: var(--raise-sm); }
+.theme-slider { display: grid; gap: 6px; font-size: 13px; }
+.theme-slider input[type="range"] { -webkit-appearance: none; appearance: none; width: 100%; height: 12px; margin: 8px 0; border-radius: 999px; border: 1px solid rgba(127, 127, 127, .45); outline-offset: 4px; }
+.theme-slider input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%; background: #fff; border: 2px solid #333; box-shadow: 0 1px 4px rgba(0, 0, 0, .4); }
+.theme-slider input[type="range"]::-moz-range-thumb { width: 24px; height: 24px; border-radius: 50%; background: #fff; border: 2px solid #333; }

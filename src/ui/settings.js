@@ -6,6 +6,7 @@ import { makeBackup, validateBackup, backupFileName, restoredSettings } from '..
 import { openAbout, rakutenCredit } from './about.js';
 import { todayStr } from '../core/model.js';
 import { THEMES, applyTheme } from './theme.js';
+import { normalizeCustom, hslToHex } from '../core/custom-theme.js';
 import { applyOrder, moveItem } from '../core/order.js';
 import { needsClass, ALL_CLASSES } from '../core/ndc.js';
 import { isMagazineCode } from '../core/isbn.js';
@@ -36,6 +37,7 @@ export function mount(container, ctx) {
       db.getSetting('theme'), db.getSetting('rakutenAppId'), db.getSetting('rakutenAccessKey'), db.getSetting('googleBooksKey'),
     ]);
     const sectionOrder = await db.getSetting('settingsOrder');
+    const savedCustom = await db.getSetting('customTheme');
     let persisted = null;
     try { persisted = await navigator.storage?.persisted?.(); } catch { persisted = null; }
     if (disposed) return;
@@ -162,11 +164,40 @@ export function mount(container, ctx) {
     });
 
     // --- colour pattern ---
-    const current = applyTheme(theme);
-    const SWATCH = { green: '#2f5d50', deepgreen: '#17302a', kinari: '#e9dcc6', white: '#f4f5f6', blue: '#5486bd', navy: '#1a2233', black: '#1f2326' };
-    const themePick = h('div', { class: 'theme-pick' }, THEMES.map(([v, label]) => h('button', {
-      class: v === current ? 'on' : '', onClick: async () => { await db.setSetting('theme', v); applyTheme(v); render(); },
-    }, h('span', { class: 'swatch', style: { background: SWATCH[v] } }), label)));
+    const current = applyTheme(theme, savedCustom);
+    const custom = normalizeCustom(savedCustom);
+    const customHex = () => hslToHex(custom.h, custom.s, custom.l);
+    const RAINBOW = 'conic-gradient(#e05a5a, #e0c25a, #5ab56e, #5a9fe0, #a05ae0, #e05a5a)';
+    const SWATCH = { green: '#2f5d50', deepgreen: '#17302a', kinari: '#e9dcc6', white: '#f4f5f6', blue: '#5486bd', navy: '#1a2233', black: '#1f2326', custom: savedCustom ? customHex() : RAINBOW };
+    const customSwatch = h('span', { class: 'swatch', style: { background: SWATCH.custom } });
+    const themeButtons = THEMES.map(([v, label]) => h('button', {
+      class: v === current ? 'on' : '', onClick: async () => { await db.setSetting('theme', v); render(); },
+    }, v === 'custom' ? customSwatch : h('span', { class: 'swatch', style: { background: SWATCH[v] } }), label));
+
+    // The three sliders under the swatches: the screen follows as they move, and the colour is kept when a finger lifts.
+    const sliders = [
+      ['h', '色合い', 0, 360, () => 'linear-gradient(to right, #f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)'],
+      ['s', '鮮やかさ', 0, 100, () => `linear-gradient(to right, ${hslToHex(custom.h, 0, custom.l)}, ${hslToHex(custom.h, 100, custom.l)})`],
+      ['l', '明るさ', 5, 95, () => `linear-gradient(to right, ${hslToHex(custom.h, custom.s, 5)}, ${hslToHex(custom.h, custom.s, 50)}, ${hslToHex(custom.h, custom.s, 95)})`],
+    ].map(([key, label, min, max, track]) => {
+      const input = h('input', { type: 'range', min, max, step: 1, 'aria-label': label });
+      input.value = custom[key];
+      return { key, input, track, row: h('label', { class: 'theme-slider' }, h('span', {}, label), input) };
+    });
+    const paintTracks = () => { for (const s of sliders) s.input.style.background = s.track(); };
+    paintTracks();
+    for (const s of sliders) {
+      s.input.addEventListener('input', () => {
+        custom[s.key] = Number(s.input.value);
+        applyTheme('custom', custom);
+        customSwatch.style.background = customHex();
+        paintTracks();
+      });
+      s.input.addEventListener('change', () => { db.setSetting('customTheme', { ...custom }); });
+    }
+    const themePick = h('div', { class: 'theme-pick' }, themeButtons,
+      current === 'custom' ? h('div', { class: 'theme-sliders' }, sliders.map(s => s.row),
+        h('p', { class: 'muted small', style: { margin: 0 } }, '選んだ色が画面の地の色になります。文字の色は、読みやすいように自動で変わります。')) : null);
 
     // --- Rakuten covers (keys stay on this phone) ---
     const appIdInput = h('input', { type: 'text', value: rakutenAppId ?? '', autocomplete: 'off', spellcheck: false });
