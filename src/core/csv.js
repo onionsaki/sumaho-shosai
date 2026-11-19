@@ -107,3 +107,11 @@ export function rowsToBooks(rows) {
 }
 
 export const csvFileName = today => `蔵書_${today.replace(/-/g, '')}.csv`;
+
+// 欲しい本 as a list to take shopping (鬼さん 2026-11-20): open wishes only, in the order the screen shows them.
+export const WISH_CSV_HEADER = ['書名', '著者', 'ISBN', '見つけた場所・値段', '買う前の期待', '足した日'];
+export function wishesToCsv(wishes) {
+  const rows = wishes.map(w => [w.title, w.author, w.isbn, w.where, w.expect, localDate(w.createdAt)]);
+  return '\ufeff' + [WISH_CSV_HEADER, ...rows].map(r => r.map(escape).join(',')).join('\r\n') + '\r\n';
+}
+export const wishCsvFileName = today => `欲しい本_${today.replace(/-/g, '')}.csv`;

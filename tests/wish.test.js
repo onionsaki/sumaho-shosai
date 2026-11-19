@@ -69,3 +69,11 @@ test('a wish with an ISBN is looked up for a cover once; covers come over from t
   assert.equal(needsCover({ isbn: '9784063842760', boughtAt: '' }), true); // saved before the fields existed
   assert.equal(wishFromBook(newBook({ coverUrl: 'https://x/c.jpg' }), 'x').coverUrl, 'https://x/c.jpg');
 });
+
+test('wishesToCsv writes a shopping list: title, author, ISBN, where, expectation, date added', async () => {
+  const { wishesToCsv, WISH_CSV_HEADER } = await import('../src/core/csv.js');
+  const w = newWish({ title: '暇と退屈の倫理学', author: '國分功一郎', isbn: '9784101035413', where: '駅前の本屋, 990円', expect: '退屈とのつきあい方', createdAt: '2026-11-20T01:00:00.000Z' });
+  const lines = wishesToCsv([w]).replace(/^\ufeff/, '').trim().split('\r\n');
+  assert.equal(lines[0], WISH_CSV_HEADER.join(','));
+  assert.ok(lines[1].startsWith('暇と退屈の倫理学,國分功一郎,9784101035413,"駅前の本屋, 990円",退屈とのつきあい方,2026-11-'));
+});

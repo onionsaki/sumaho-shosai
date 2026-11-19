@@ -1,10 +1,11 @@
 // 欲しい本: the list under 確認（本屋）, its editor, and moving 持っていない books over (鬼さん 2026-10-25).
 
-import { h, fill, sheet, toast, confirmDialog, formatDate } from './dom.js';
+import { h, fill, sheet, toast, confirmDialog, formatDate, saveFile, savedMessage } from './dom.js';
 import { icon } from './icons.js';
 import { displayTitle, coverEl } from './shelf.js';
 import { newWish, splitWishes, markBought, wishCandidates, wishFromBook, needsCover } from '../core/wish.js';
 import { todayStr } from '../core/model.js';
+import { wishesToCsv, wishCsvFileName } from '../core/csv.js';
 import { OfflineError } from '../lookup.js';
 
 export function openWishEditor(ctx, wish, onSaved = () => {}, isNew = false) {
@@ -56,7 +57,13 @@ export function openWishEditor(ctx, wish, onSaved = () => {}, isNew = false) {
     onSaved();
   }
   s.setAction('保存', save);
+  // The cover large at the top (鬼さん 2026-11-20); pressing it shows it as wide as the screen.
+  const bigCover = wish.coverUrl ? h('button', { 'aria-label': '表紙を大きく見る', style: { display: 'block', margin: '0 auto 14px', padding: 0, border: 0, background: 'none' },
+    onClick: () => sheet(h('img', { src: wish.coverUrl, alt: wish.title, style: { display: 'block', width: '100%', height: 'auto', borderRadius: '6px' } }), { title: wish.title, thumbClose: true }) },
+    h('img', { src: wish.coverUrl, alt: '', style: { display: 'block', width: '180px', maxWidth: '60vw', height: 'auto', borderRadius: '6px', boxShadow: 'var(--raise-sm)' },
+      onError: e => e.currentTarget.closest('button')?.remove() })) : null;
   fill(body,
+    bigCover,
     h('label', { class: 'field' }, h('span', {}, '書名'), title),
     h('label', { class: 'field' }, h('span', {}, '著者'), author),
     h('button', { class: 'btn wide', onClick: search }, '国立国会図書館で正しい書名を探す'),
@@ -149,6 +156,10 @@ export function wishList(ctx) {
         h('button', { class: 'round-btn small-round', 'aria-label': '欲しい本を足す', onClick: () => openWishEditor(ctx, newWish(), refresh, true) }, icon('plus'))),
       open.length ? h('ul', { class: 'wish-ul card' }, open.map(row))
         : h('p', { class: 'muted small' }, '本屋で「持っていない」と出た本や、気になった本をここに残せます。右の＋から書名だけでも足せます。'),
+      open.length ? h('button', { class: 'link-btn', style: { marginTop: '8px' }, onClick: async () => {
+        const how = await saveFile(wishCsvFileName(todayStr()), wishesToCsv(open), 'text/csv');
+        if (how !== 'cancelled') toast(savedMessage(how));
+      } }, `欲しい本をCSVに（${open.length}冊）`) : null,
       bought.length ? h('details', { class: 'card', style: { marginTop: '12px' } },
         h('summary', { style: { cursor: 'pointer', fontWeight: '700', minHeight: '40px' } }, `買ったもの（${bought.length}）`),
         h('ul', { class: 'wish-ul' }, bought.map(row))) : null,
